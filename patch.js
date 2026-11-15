@@ -572,8 +572,8 @@ function buildInjectScript(dict) {
     if (modelEffortSuffix) return modelEffortSuffix[1].trim() + '（' + effortNames[modelEffortSuffix[2].toLowerCase()] + '）';
     const modelEffortTail = normalizedText.match(/^((?:Gemini|Claude|GPT|Sonnet|Opus).+?)\\s+(low|medium|high|xhigh|max|extra)$/i);
     if (modelEffortTail) return modelEffortTail[1] + ' ' + effortNames[modelEffortTail[2].toLowerCase()];
-    const paidPlanNotice = normalizedText.match(/^(.+?) is now available on paid Pro and Ultra plans\\. Third-party model access will no longer be available on your current plan starting on (.+)\\.$/);
-    if (paidPlanNotice) return paidPlanNotice[1] + ' 现已向付费 Pro 和 Ultra 方案用户开放。从 ' + formatUiDate(paidPlanNotice[2]) + '起，你当前的方案将不再提供第三方模型访问权限。';
+    const paidPlanNotice = normalizedText.match(/^(.+?) (?:is now available|are available) on paid Pro and Ultra plans\\. Third-party model access will no longer be available on your current plan starting on (.+)\\.$/);
+    if (paidPlanNotice) return paidPlanNotice[1].replace(/ and /g, ' 和 ') + ' 现已向付费 Pro 和 Ultra 方案用户开放。从 ' + formatUiDate(paidPlanNotice[2]) + '起，你当前的方案将不再提供第三方模型访问权限。';
     const removalNotice = normalizedText.match(/^(.+?) will be removed from Antigravity on (.+)\\.$/);
     if (removalNotice) return removalNotice[1] + ' 将于 ' + formatUiDate(removalNotice[2]) + '从 Antigravity 中移除。';
     const planAvailability = normalizedText.match(/^(.+?) is currently available to (Ultra plan|Ultra and paid Pro plan|paid Pro and Ultra) subscribers\\.$/);
