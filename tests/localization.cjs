@@ -80,6 +80,12 @@ function scenario(hostname) {
     "Choose whether to be notified when the agent needs your attention or completes a task.": "选择是否在智能体需要你处理或完成任务时收到通知。"
   });
   Object.assign(noticeFixtures,{"Within each group, models share a weekly limit. Quota is consumed proportionally to the cost of the tokens. Thus, limits will last longer with shorter tasks or using more cost-effective models. Your weekly limit is tied directly to your individual tier.": "每组内的模型共享每周限额。配额消耗与 Token 成本成比例，因此较短的任务或成本更低的模型可让配额使用更久。你的每周限额直接取决于你个人的订阅等级。", "Models within this group:": "此组内的模型：", "Yes, allow": "是，允许", "Yes, allow this time": "是，仅允许这一次", "Yes, allow this download": "是，允许此次下载", "Yes, and always allow in this conversation": "是，并在此会话中始终允许", "Yes, save rule in this conversation": "是，在此会话中保存规则", "Yes, save rule globally": "是，全局保存规则", "Yes, and always allow": "是，并始终允许", "(tell the agent what to do instead)": "（告诉智能体应改做什么）", "Allow the browser agent to download a file?": "允许浏览器智能体下载文件吗？", "Allow read access to this path?": "允许读取此路径吗？", "Allow write access to this path?": "允许写入此路径吗？", "Allow reading this URL?": "允许读取此网址吗？", "Allow executing actions on this URL?": "允许在此网址上执行操作吗？", "Allow browser downloads from this site?": "允许从此网站通过浏览器下载吗？", "Allow running this command?": "允许运行此命令吗？", "Allow running this command outside the sandbox?": "允许在沙盒外运行此命令吗？", "Allow using this MCP tool?": "允许使用此 MCP 工具吗？", "Allow a one-time administrator (UAC) elevation?": "允许此次提升为管理员权限（UAC）吗？", "Allow access to this resource?": "允许访问此资源吗？", "Save rule to always allow read access to this path?": "保存规则以始终允许读取此路径吗？", "Save rule to always allow write access to this path?": "保存规则以始终允许写入此路径吗？", "Save rule to always allow reading this URL?": "保存规则以始终允许读取此网址吗？", "Save rule to always allow executing actions on this URL?": "保存规则以始终允许在此网址上执行操作吗？", "Save rule to always allow browser downloads from this site?": "保存规则以始终允许从此网站通过浏览器下载吗？", "Save rule to always allow running this command?": "保存规则以始终允许运行此命令吗？", "Save rule to always allow running this command outside the sandbox?": "保存规则以始终允许在沙盒外运行此命令吗？", "Save rule to always allow using this MCP tool?": "保存规则以始终允许使用此 MCP 工具吗？", "Save rule to always allow a one-time administrator (UAC) elevation?": "保存规则以始终允许单次管理员权限提升（UAC）吗？", "Save rule to always allow access to this resource?": "保存规则以始终允许访问此资源吗？", "Confirm the command is safe to run outside of the sandbox with full network and disk access.": "请确认此命令可安全地在沙盒外运行，并拥有完整的网络和磁盘访问权限。", "Requesting a one-time administrator (UAC) elevation": "正在请求此次提升为管理员权限（UAC）", "From": "来源", "Redirected from": "重定向来源", "Models within this group: Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B": "此组内的模型：Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B", "Models within this group: Gemini 3.8 Flash": "此组内的模型：Gemini 3.8 Flash", "Models within this group: Gemini 5 Flash, Claude Opus 6": "此组内的模型：Gemini 5 Flash, Claude Opus 6", "You have used some of your weekly limit, it will fully refresh in 6 days, 15 hours.": "你已使用部分每周配额，将在 6 天，15 小时后全部恢复。", "You have used some of your weekly limit, it will fully refresh in 1 day, 1 hour, 2 minutes and 3 seconds.": "你已使用部分每周配额，将在 1 天，1 小时，2 分钟，3 秒后全部恢复。", "Allow list files in antigravity references?": "允许列出 antigravity references 中的文件吗？", "Yes, and always allow 'Settings' in this conversation": "是，并在此会话中始终允许“Settings”", "Yes, allow downloads from example.com for this run": "是，仅本次运行允许从 example.com 下载", "Yes, save rule for 'D:/docs/*.txt' globally": "是，全局保存“D:/docs/*.txt”的规则"});
+  Object.assign(noticeFixtures,{
+    'Allow search for codex references?':'允许搜索 codex references 吗？',
+    'Allow search for antigravity references?':'允许搜索 antigravity references 吗？',
+    'Save rule to always allow search for codex references?':'保存规则以始终允许搜索 codex references 吗？',
+    'Allow search for Codex References 2.0 (local)/中文目录?':'允许搜索 Codex References 2.0 (local)/中文目录 吗？'
+  });
   const noticeTextNodes=Object.keys(noticeFixtures).map(text=>new TextNode(text));
   const noticeFixturesContainer=new Element('div',noticeTextNodes);
   const quotaDetail=new TextNode('Daily limit, resets in 2h 3m');
@@ -99,7 +105,7 @@ function scenario(hostname) {
   const promptContainer=new Element('div',promptTexts,{'data-testid':'plugin-suggested-prompt-list'});
   const standalonePermissionAppName=new TextNode('Science');
   const standalonePermissionAppHeader=new Element('span',[standalonePermissionAppName],{'data-testid':'permission-app-header'});
-  const permissionHeading=new TextNode('Allow list files in antigravity references?');
+  const permissionHeading=new TextNode('Allow search for codex references?');
   const permissionAppName=new TextNode('Settings');
   const permissionHeader=new Element('div',[new Element('span',[permissionAppName],{'data-testid':'permission-app-header'}),new Element('span',[permissionHeading],{class:'font-medium text-foreground min-w-0 break-words'})],{'data-testid':'ask-question-header-text'});
   const onceOption=new TextNode('Yes, allow this time');
@@ -117,8 +123,13 @@ function scenario(hostname) {
   const userQuestionLabel=new TextNode('Yes, allow this time');
   const userQuestionCard=new Element('div',[new Element('div',[userQuestionLabel],{'data-testid':'ask-question-option-text'}),new Element('textarea',[],{'data-testid':'ask-question-writein',placeholder:'(tell the agent what to do instead)'})],{class:'outline-none flex flex-col no-focus-ring no-focus-agent-input'});
   const protectedUserWrapper=new Element('div',[userQuestionCard],{'data-testid':'user-message'});
+  const userSearchText=new TextNode('Allow search for codex references?');
+  const agentSearchText=new TextNode('Allow search for codex references?');
+  const genericSearchText=new TextNode('Allow search for codex references?');
+  const genericSearchHeader=new Element('div',[new Element('span',[genericSearchText],{class:'font-medium text-foreground min-w-0 break-words'})],{'data-testid':'ask-question-header-text'});
+  genericSearchHeader.parentElement=genericQuestionCard;genericQuestionCard.childNodes.push(genericSearchHeader);
   const input=new Element('input',[],{placeholder:'Settings'}); input.value='Run'; input.type='text';
-  const body=new Element('body',[settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,quotaEmpty,modelNotice,modelUnavailable,viewPlans,noticeFixturesContainer,quotaDetail,quotaPercent,splitQuotaPercent,availableCredits,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,standalonePermissionAppHeader,permissionAgentWrapper,protectedUserWrapper,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),input]);
+  const body=new Element('body',[settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,quotaEmpty,modelNotice,modelUnavailable,viewPlans,noticeFixturesContainer,quotaDetail,quotaPercent,splitQuotaPercent,availableCredits,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,standalonePermissionAppHeader,permissionAgentWrapper,protectedUserWrapper,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),new Element('div',[userSearchText],{'data-testid':'user-message'}),new Element('div',[agentSearchText],{'data-testid':'agent-response'}),input]);
   const observers=[];
   class Observer {constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){}}
   vm.runInNewContext(injected,{window:{location:{protocol:'https:',hostname,pathname:'/customizations'}},document:{body,readyState:'complete',title:'Antigravity',querySelector(){return null;},querySelectorAll(selector){return body.querySelectorAll(selector);}},Node:{TEXT_NODE:3,ELEMENT_NODE:1},MutationObserver:Observer,console});
@@ -175,7 +186,21 @@ function scenario(hostname) {
     observers[0].callback([{type:'childList',target:lateCreationNotice,addedNodes:lateCreationNotice.childNodes}]);
     assert.equal(lateStrong.textContent,'Settings');
     assert.ok(!/Also includes|when working|automation\./.test(lateCreationNotice.textContent),'Late-mounted project fragments should compose before individual translation');
-    assert.equal(permissionHeading.textContent,'允许列出 antigravity references 中的文件吗？');
+    assert.equal(permissionHeading.textContent,'允许搜索 codex references 吗？');
+    for(const [source,expected] of [
+      ['Allow search for antigravity references?','允许搜索 antigravity references 吗？'],
+      ['Save rule to always allow search for codex references?','保存规则以始终允许搜索 codex references 吗？'],
+      ['Allow search for Codex References 2.0 (local)/中文目录?','允许搜索 Codex References 2.0 (local)/中文目录 吗？'],
+      ['Allow search files in codex references?','Allow search files in codex references?'],
+      ['Allow rg -n "codex" .?','Allow rg -n "codex" .?']
+    ]) {
+      permissionHeading.textContent=source;
+      observers[0].callback([{type:'characterData',target:permissionHeading}]);
+      assert.equal(permissionHeading.textContent,expected,'Dynamic permission heading: '+source);
+    }
+    assert.equal(userSearchText.textContent,'Allow search for codex references?');
+    assert.equal(agentSearchText.textContent,'Allow search for codex references?');
+    assert.equal(genericSearchText.textContent,'Allow search for codex references?');
     assert.equal(onceOption.textContent,'是，仅允许这一次');
     assert.equal(conversationOption.textContent,'是，并在此会话中始终允许');
     assert.equal(permissionInput.getAttribute('placeholder'),'（告诉智能体应改做什么）');

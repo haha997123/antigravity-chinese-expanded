@@ -570,6 +570,8 @@ function buildInjectScript(dict) {
     }
     const listFiles = text.match(/^(Allow|Save rule to always allow) list files in (.+)\\?$/);
     if (listFiles) return (listFiles[1] === 'Allow' ? '允许列出 ' : '保存规则以始终允许列出 ') + listFiles[2] + ' 中的文件吗？';
+    const search = text.match(/^(Allow|Save rule to always allow) search for (.+)\\?$/);
+    if (search) return (search[1] === 'Allow' ? '允许搜索 ' : '保存规则以始终允许搜索 ') + search[2] + ' 吗？';
     const saveRule = text.match(/^Yes, save rule for '(.+)' (in this conversation|globally)$/);
     if (saveRule) return '是，' + (saveRule[2] === 'globally' ? '全局' : '在此会话中') + '保存“' + saveRule[1] + '”的规则';
     const allowPattern = text.match(/^Yes, and always allow '(.+)'( in this conversation)?$/);
