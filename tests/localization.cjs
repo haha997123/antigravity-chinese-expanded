@@ -60,6 +60,20 @@ function scenario(hostname) {
   const advancedDescription=new TextNode('Modify permissions for file and terminal tools.');
   const feedbackType=new TextNode('Feedback Type');
   const customizationsEmpty=new TextNode('There are no customizations enabled.');
+  const quotaEmpty=new TextNode('No quota information available.');
+  const modelNotice=new TextNode('Notice');
+  const modelUnavailable=new TextNode('Unavailable');
+  const viewPlans=new TextNode('View plans');
+  const noticeFixtures={"Notice": "提示", "Unavailable": "不可用", "Your quota for this model is running low.": "此模型的剩余配额较低。", "To continue using this model now, enable AI Credit overages.": "如需立即继续使用此模型，请启用 AI 积分超额使用。", "Too many requests, please try again in a bit!": "请求过于频繁，请稍后重试！", "No Model Selected": "未选择模型", "Select Model": "选择模型", "Edit Model": "编辑模型", "Add Model": "添加模型", "Custom models are only supported on Linux machines.": "自定义模型仅支持在 Linux 设备上使用。", "Loading models...": "正在加载模型……", "No models available": "暂无可用模型", "Best of N Models": "从 N 个模型中择优", "View plans": "查看方案", "See plans": "查看方案", "Sonnet 5.5 is now available on paid Pro and Ultra plans. Third-party model access will no longer be available on your current plan starting on November 18, 2026.": "Sonnet 5.5 现已向付费 Pro 和 Ultra 方案用户开放。从 2026 年 11 月 18 日起，你当前的方案将不再提供第三方模型访问权限。", "Opus 5.5 is now available on paid Pro and Ultra plans. Third-party model access will no longer be available on your current plan starting on November 18, 2026.": "Opus 5.5 现已向付费 Pro 和 Ultra 方案用户开放。从 2026 年 11 月 18 日起，你当前的方案将不再提供第三方模型访问权限。", "GPT-OSS will be removed from Antigravity on November 18, 2026.": "GPT-OSS 将于 2026 年 11 月 18 日从 Antigravity 中移除。", "Gemini 4 Carbon is currently available to Ultra plan subscribers.": "Gemini 4 Carbon 目前向 Ultra 方案订阅用户开放。", "Gemini 4 Argon is currently available to Ultra and paid Pro plan subscribers.": "Gemini 4 Argon 目前向 Ultra 和付费 Pro 方案订阅用户开放。", "Gemini 4 Hydrogen is currently available to paid Pro and Ultra subscribers.": "Gemini 4 Hydrogen 目前向付费 Pro 和 Ultra 订阅用户开放。"};
+  Object.assign(noticeFixtures,{"Sonnet 6.1 is now available on paid Pro and Ultra plans. Third-party model access will no longer be available on your current plan starting on January 2, 2027.": "Sonnet 6.1 现已向付费 Pro 和 Ultra 方案用户开放。从 2027 年 1 月 2 日起，你当前的方案将不再提供第三方模型访问权限。", "GPT-OSS Next will be removed from Antigravity on December 31, 2028.": "GPT-OSS Next 将于 2028 年 12 月 31 日从 Antigravity 中移除。", "Gemini 5 Carbon is currently available to Ultra plan subscribers.": "Gemini 5 Carbon 目前向 Ultra 方案订阅用户开放。", "Your quota for Gemini Test will reset on February 3, 2029. Switch to another available model to continue.": "Gemini Test 的配额将于 2029 年 2 月 3 日重置。请切换到其他可用模型以继续。", "Your plan's baseline quota will refresh on March 4, 2030.": "你的方案基础配额将于 2030 年 3 月 4 日刷新。"});
+  Object.assign(noticeFixtures,{"low": "低", "medium": "中", "GPT-OSS 120B (Medium)": "GPT-OSS 120B（中）", "Gemini 3.8 Flash (Low)": "Gemini 3.8 Flash（低）", "Claude Sonnet 4.6 (Thinking)": "Claude Sonnet 4.6（思考）", "Gemini 3.8 Flash High": "Gemini 3.8 Flash 高"});
+  Object.assign(noticeFixtures,{"Your This Computer setting": "你的本机设置", "Your Remote setting": "你的远程环境设置", "Project setting": "项目设置", "Workspace setting": "工作区设置", "Remote Permissions": "远程权限", "Only this conversation uses this preset.": "仅此会话使用此预设。", "This Conversation": "此会话", "Use Global Settings": "使用全局设置", "Failed to copy:": "复制失败：", "Auto": "自动", "Default needs the terminal sandbox, which isn't available on this host.": "默认模式需要终端沙盒，此设备暂不支持。", "Auto needs the terminal sandbox, which isn't available on this host.": "自动模式需要终端沙盒，此设备暂不支持。", "This project overrides your global permission settings.": "此项目的设置会覆盖你的全局权限设置。", "This workspace overrides your global permission settings.": "此工作区的设置会覆盖你的全局权限设置。", "Enter Queues after the turn": "Enter 等待当前轮次结束后发送", "Alt+Enter Sends immediately": "Alt+Enter 立即发送", "Alt+Enter On empty prompt, sends next in queue": "Alt+Enter 输入为空时，发送队列中的下一条消息", "Enter Sends immediately": "Enter 立即发送", "Alt+Enter Queues after the turn": "Alt+Enter 等待当前轮次结束后发送"});
+  const noticeTextNodes=Object.keys(noticeFixtures).map(text=>new TextNode(text));
+  const noticeFixturesContainer=new Element('div',noticeTextNodes);
+  const quotaDetail=new TextNode('Daily limit, resets in 2h 3m');
+  const quotaPercent=new TextNode('45% left');
+  const splitQuotaPercent=new Element('span',[new TextNode('45'),new TextNode('% left')]);
+  const availableCredits=new TextNode('Available AI Credits: 100');
   const feedbackDescription=new TextNode('Please describe the issue in detail. The more actionable your feedback, the quicker our team can address your request. Some helpful information includes:');
   const feedbackIdentity=new TextNode('Send feedback as example@example.com');
   const inheritedTooltip=new Element('button',[],{title:'Inherits your Global Permissions when working in this project.'});
@@ -72,7 +86,7 @@ function scenario(hostname) {
   const promptTexts=Object.keys(detailPrompts).map(text=>new TextNode(text));
   const promptContainer=new Element('div',promptTexts,{'data-testid':'plugin-suggested-prompt-list'});
   const input=new Element('input',[],{placeholder:'Settings'}); input.value='Run'; input.type='text';
-  const body=new Element('body',[settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),input]);
+  const body=new Element('body',[settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,quotaEmpty,modelNotice,modelUnavailable,viewPlans,noticeFixturesContainer,quotaDetail,quotaPercent,splitQuotaPercent,availableCredits,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),input]);
   const observers=[];
   class Observer {constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){}}
   vm.runInNewContext(injected,{window:{location:{protocol:'https:',hostname,pathname:'/customizations'}},document:{body,readyState:'complete',title:'Antigravity',querySelector(){return null;}},Node:{TEXT_NODE:3,ELEMENT_NODE:1},MutationObserver:Observer,console});
@@ -106,6 +120,17 @@ function scenario(hostname) {
     assert.equal(advancedDescription.textContent,'修改文件和终端工具的权限。');
     assert.equal(feedbackType.textContent,'反馈类型');
     assert.equal(customizationsEmpty.textContent,'当前未启用任何自定义配置。');
+    assert.equal(quotaEmpty.textContent,'暂无可用的配额信息。');
+    assert.equal(modelNotice.textContent,'提示');
+    assert.equal(modelUnavailable.textContent,'不可用');
+    assert.equal(viewPlans.textContent,'查看方案');
+    const noticeFixtureKeys=Object.keys(noticeFixtures);
+    for(let index=0;index<noticeTextNodes.length;index++) assert.equal(noticeTextNodes[index].textContent,noticeFixtures[noticeFixtureKeys[index]],'Model notice '+index);
+    assert.ok(quotaDetail.textContent.startsWith('每日配额，'));
+    assert.ok(!/limit|resets|in|2h|3m/.test(quotaDetail.textContent));
+    assert.equal(quotaPercent.textContent,'45% 可用');
+    assert.equal(splitQuotaPercent.textContent,'45% 可用');
+    assert.equal(availableCredits.textContent,'可用 AI 积分：100');
     assert.ok(feedbackDescription.textContent.startsWith('请详细描述遇到的问题。'));
     assert.equal(feedbackIdentity.textContent,'以 example@example.com 的身份发送反馈');
     assert.equal(inheritedTooltip.getAttribute('title'),'在此项目中工作时，沿用你的全局权限。');
