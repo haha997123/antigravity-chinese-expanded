@@ -567,6 +567,11 @@ function buildInjectScript(dict) {
     const normalizedText = text.replace(/\\s+/g, ' ').trim();
     if (!normalizedText) return null;
     
+    const effortNames = {low:'低',medium:'中',high:'高',xhigh:'极高',extra:'极高',max:'最高',thinking:'思考'};
+    const modelEffortSuffix = normalizedText.match(/^((?:Gemini|Claude|GPT|Sonnet|Opus)[^()]*?)\\s*\\((low|medium|high|xhigh|max|extra|thinking)(?:\\s+thinking)?\\)$/i);
+    if (modelEffortSuffix) return modelEffortSuffix[1].trim() + '（' + effortNames[modelEffortSuffix[2].toLowerCase()] + '）';
+    const modelEffortTail = normalizedText.match(/^((?:Gemini|Claude|GPT|Sonnet|Opus).+?)\\s+(low|medium|high|xhigh|max|extra)$/i);
+    if (modelEffortTail) return modelEffortTail[1] + ' ' + effortNames[modelEffortTail[2].toLowerCase()];
     const paidPlanNotice = normalizedText.match(/^(.+?) is now available on paid Pro and Ultra plans\\. Third-party model access will no longer be available on your current plan starting on (.+)\\.$/);
     if (paidPlanNotice) return paidPlanNotice[1] + ' 现已向付费 Pro 和 Ultra 方案用户开放。从 ' + formatUiDate(paidPlanNotice[2]) + '起，你当前的方案将不再提供第三方模型访问权限。';
     const removalNotice = normalizedText.match(/^(.+?) will be removed from Antigravity on (.+)\\.$/);

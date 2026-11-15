@@ -3340,5 +3340,9 @@
   "See plans": "查看方案",
   "Gemini 4 Carbon is currently available to Ultra plan subscribers.": "Gemini 4 Carbon 目前向 Ultra 方案订阅用户开放。",
   "Gemini 4 Argon is currently available to Ultra and paid Pro plan subscribers.": "Gemini 4 Argon 目前向 Ultra 和付费 Pro 方案订阅用户开放。",
-  "Gemini 4 Hydrogen is currently available to paid Pro and Ultra subscribers.": "Gemini 4 Hydrogen 目前向付费 Pro 和 Ultra 订阅用户开放。"
+  "Gemini 4 Hydrogen is currently available to paid Pro and Ultra subscribers.": "Gemini 4 Hydrogen 目前向付费 Pro 和 Ultra 订阅用户开放。",
+  "low": "低",
+  "medium": "中",
+  "Low": "低",
+  "Medium": "中"
 }
