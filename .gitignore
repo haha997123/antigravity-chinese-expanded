@@ -1,0 +1,46 @@
+# Dependencies and generated output
+node_modules/
+temp/
+tmp/
+work/
+staged-install/
+dist/
+coverage/
+*.log
+
+# Client binaries, archives, extracted resources, and backups
+*.asar
+*.asar.*
+*.exe
+*.dll
+*.pdb
+*.zip
+*.7z
+*.tar
+*.gz
+*.bak
+*.backup
+resources/
+backups/
+backup-*/
+
+# Local configuration, credentials, and user data
+.env
+.env.*
+.gemini/
+.antigravity/
+user-data/
+userdata/
+logs/
+cache/
+*.db
+*.sqlite
+*.sqlite3
+*.pbtxt
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

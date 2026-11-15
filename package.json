@@ -1,0 +1,22 @@
+{
+  "name": "antigravity-chinese-expanded",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chinese UI patch for Antigravity 2.32.1 on Windows; plugin and skill names stay in English.",
+  "license": "MIT",
+  "main": "patch.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "win32"
+  ],
+  "scripts": {
+    "patch": "node patch.js",
+    "revert": "node patch.js --revert",
+    "test": "node tests/localization.cjs && node tests/archive-safety.cjs"
+  },
+  "dependencies": {
+    "@electron/asar": "3.4.1"
+  }
+}
