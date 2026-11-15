@@ -557,11 +557,31 @@ function buildInjectScript(dict) {
     for (const child of element.childNodes) visit(child);
   }
 
+  function formatUiDate(value) {
+    const months = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
+    return value.replace(/\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),\\s+(\\d{4})\\b/g, (original, month, day, year) => Number(day) >= 1 && Number(day) <= 31 ? year + ' 年 ' + months[month] + ' 月 ' + Number(day) + ' 日' : original);
+  }
+
   function translateText(text) {
     if (!text) return null;
     const normalizedText = text.replace(/\\s+/g, ' ').trim();
     if (!normalizedText) return null;
     
+    const paidPlanNotice = normalizedText.match(/^(.+?) is now available on paid Pro and Ultra plans\\. Third-party model access will no longer be available on your current plan starting on (.+)\\.$/);
+    if (paidPlanNotice) return paidPlanNotice[1] + ' 现已向付费 Pro 和 Ultra 方案用户开放。从 ' + formatUiDate(paidPlanNotice[2]) + '起，你当前的方案将不再提供第三方模型访问权限。';
+    const removalNotice = normalizedText.match(/^(.+?) will be removed from Antigravity on (.+)\\.$/);
+    if (removalNotice) return removalNotice[1] + ' 将于 ' + formatUiDate(removalNotice[2]) + '从 Antigravity 中移除。';
+    const planAvailability = normalizedText.match(/^(.+?) is currently available to (Ultra plan|Ultra and paid Pro plan|paid Pro and Ultra) subscribers\\.$/);
+    if (planAvailability) {
+      const plans = {'Ultra plan':'Ultra 方案订阅用户','Ultra and paid Pro plan':'Ultra 和付费 Pro 方案订阅用户','paid Pro and Ultra':'付费 Pro 和 Ultra 订阅用户'};
+      return planAvailability[1] + ' 目前向' + (planAvailability[2] === 'paid Pro and Ultra' ? '' : ' ') + plans[planAvailability[2]] + '开放。';
+    }
+    const quotaResetNotice = normalizedText.match(/^Your quota for (.+?) will reset on (.+)\\. Switch to another available model to continue\\.$/);
+    if (quotaResetNotice) return quotaResetNotice[1] + ' 的配额将于 ' + formatUiDate(quotaResetNotice[2]) + '重置。请切换到其他可用模型以继续。';
+    const quotaReachedNotice = normalizedText.match(/^Your quota for (.+?) has been reached\\. Switch to another available model to continue\\.$/);
+    if (quotaReachedNotice) return quotaReachedNotice[1] + ' 的配额已用尽。请切换到其他可用模型以继续。';
+    const baselineResetNotice = normalizedText.match(/^Your plan's baseline quota will refresh on (.+)\\.$/);
+    if (baselineResetNotice) return '你的方案基础配额将于 ' + formatUiDate(baselineResetNotice[1]) + '刷新。';
     // 1. Exact match in normalized dictionary
     if (normalizedDict[normalizedText]) {
       return normalizedDict[normalizedText];
@@ -776,6 +796,12 @@ function buildInjectScript(dict) {
     if (featuredTabsMatch) return (normalizedDict[featuredTabsMatch[1]] || featuredTabsMatch[1]) + '插件';
     const feedbackIdentityMatch = normalizedText.match(/^Send feedback as (.+)$/);
     if (feedbackIdentityMatch) return '以 ' + feedbackIdentityMatch[1] + ' 的身份发送反馈';
+    const usageDetailMatch = normalizedText.match(/^(Daily limit|Weekly limit|\\d+\\s*[smhd]\\s+limit),\\s*resets in (.+)$/i);
+    if (usageDetailMatch) return (translateText(usageDetailMatch[1]) || usageDetailMatch[1]) + '，' + (translateText('Resets in ' + usageDetailMatch[2]) || usageDetailMatch[2]);
+    const percentageLeftMatch = normalizedText.match(/^(\\d+(?:\\.\\d+)?)% left$/i);
+    if (percentageLeftMatch) return percentageLeftMatch[1] + '% 可用';
+    const availableCreditsMatch = normalizedText.match(/^Available AI Credits:\\s*(.+)$/i);
+    if (availableCreditsMatch) return '可用 AI 积分：' + availableCreditsMatch[1];
     const inheritedPermissionsMatch = normalizedText.match(/^Inherits your Global Permissions when working (in this project|in these conversations)\\.$/);
     if (inheritedPermissionsMatch) return '在' + (inheritedPermissionsMatch[1] === 'in this project' ? '此项目' : '这些会话') + '中工作时，沿用你的全局权限。';
     return null;
