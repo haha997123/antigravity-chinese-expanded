@@ -464,7 +464,7 @@ function buildInjectScript(dict) {
 
   function isPluginNameElement(element) {
     const testId = element.getAttribute && element.getAttribute('data-testid');
-    if (['featured-carousel-headline', 'featured-carousel-member-tile', 'plugin-view-title-bar-title', 'custom-view-pane-title'].includes(testId)) return true;
+    if (['featured-carousel-headline', 'featured-carousel-member-tile', 'plugin-view-title-bar-title', 'custom-view-pane-title', 'permission-app-header'].includes(testId)) return true;
     if (element.tagName === 'H3' && hasAncestorTestId(element, 'featured-carousel')) return true;
     const classes = (element.getAttribute && element.getAttribute('class') || '').split(/\\s+/);
     if (hasAncestorTestId(element, 'customization-card') && ['font-medium', 'text-foreground', 'truncate'].every(name => classes.includes(name))) return true;
@@ -557,6 +557,106 @@ function buildInjectScript(dict) {
     for (const child of element.childNodes) visit(child);
   }
 
+  function translateQuotaPermissionText(text) {
+    const group = text.match(/^Models within this group:\\s*(.+)$/);
+    if (group) return '此组内的模型：' + group[1];
+    const reset = text.match(/^You have used some of your weekly limit, it will fully refresh in (.+)\\.$/);
+    if (reset) {
+      const units = {week:'周', day:'天', hour:'小时', minute:'分钟', second:'秒'};
+      const expression = /(\\d+(?:\\.\\d+)?)\\s+(week|day|hour|minute|second)s?\\b/gi;
+      const parts = Array.from(reset[1].matchAll(expression));
+      const remainder = reset[1].replace(expression, '').replace(/\\band\\b|[,\\s]/gi, '');
+      if (parts.length && !remainder) return '你已使用部分每周配额，将在 ' + parts.map(part => part[1] + ' ' + units[part[2].toLowerCase()]).join('，') + '后全部恢复。';
+    }
+    const listFiles = text.match(/^(Allow|Save rule to always allow) list files in (.+)\\?$/);
+    if (listFiles) return (listFiles[1] === 'Allow' ? '允许列出 ' : '保存规则以始终允许列出 ') + listFiles[2] + ' 中的文件吗？';
+    const saveRule = text.match(/^Yes, save rule for '(.+)' (in this conversation|globally)$/);
+    if (saveRule) return '是，' + (saveRule[2] === 'globally' ? '全局' : '在此会话中') + '保存“' + saveRule[1] + '”的规则';
+    const allowPattern = text.match(/^Yes, and always allow '(.+)'( in this conversation)?$/);
+    if (allowPattern) return '是，并' + (allowPattern[2] ? '在此会话中' : '') + '始终允许“' + allowPattern[1] + '”';
+    const downloads = text.match(/^Yes, (allow|always allow) downloads from (.+?)( for this run| in this conversation)?$/);
+    if (downloads) return '是，' + (downloads[3] === ' for this run' ? '仅本次运行' : downloads[3] === ' in this conversation' ? '在此会话中' : downloads[1] === 'always allow' ? '始终' : '') + '允许从 ' + downloads[2] + ' 下载';
+    const allowTarget = text.match(/^Yes, (allow|always allow) (.+?)( in this conversation)?$/);
+    if (allowTarget && (allowTarget[2] !== 'this time' && allowTarget[2] !== 'this download')) return '是，' + (allowTarget[3] ? '在此会话中' : '') + (allowTarget[1] === 'always allow' ? '始终' : '') + '允许 ' + allowTarget[2];
+    return null;
+  }
+
+  function translatePermissionCards() {
+    if (typeof document.querySelectorAll !== 'function') return;
+    const placeholderEnglish = '(tell the agent what to do instead)';
+    const placeholderChinese = normalizedDict[placeholderEnglish];
+    const optionLabels = new Set();
+    function normalized(node) { return node.textContent.replace(/\\s+/g, ' ').trim(); }
+    function replaceLabel(element, translated) {
+      const leaves = [];
+      function collect(node) {
+        if (node.nodeType === Node.TEXT_NODE) leaves.push(node);
+        else if (!isExcludedElement(node) && node.getAttribute('data-testid') !== 'permission-app-header' && node.getAttribute('data-testid') !== 'permission-target-editor') {
+          for (const child of node.childNodes) collect(child);
+        }
+      }
+      collect(element);
+      if (!leaves.length) return;
+      for (let index = 0; index < leaves.length; index++) {
+        const value = index === 0 ? translated : '';
+        if (leaves[index].textContent !== value) leaves[index].textContent = value;
+      }
+    }
+    function translateLeaves(element) {
+      if (isExcludedElement(element)) return;
+      for (const child of element.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          const translated = translateText(child.textContent);
+          if (translated !== null && translated !== child.textContent) child.textContent = translated;
+        } else translateLeaves(child);
+      }
+    }
+    for (const input of document.querySelectorAll('[data-testid="ask-question-writein"]')) {
+      const placeholder = input.getAttribute('placeholder');
+      if (input.tagName !== 'TEXTAREA' || ![placeholderEnglish, placeholderChinese].includes(placeholder)) continue;
+      if (hasAncestorTestId(input, 'user-message') || hasAncestorTestId(input, 'live-user-turn')) continue;
+      let protectedInput = false;
+      for (let parent = input.parentElement; parent; parent = parent.parentElement) {
+        if (EXCLUDE_TAGS.has(parent.tagName) || parent.matches('.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])')) { protectedInput = true; break; }
+      }
+      if (protectedInput) continue;
+      let card = input.parentElement;
+      while (card) {
+        const classes = (card.getAttribute('class') || '').split(/\\s+/);
+        if (['no-focus-agent-input', 'no-focus-ring', 'outline-none'].every(name => classes.includes(name))) break;
+        card = card.parentElement;
+      }
+      if (!card) continue;
+      // Update the fixed placeholder only, never the user's input value.
+      if (placeholderChinese && placeholder !== placeholderChinese) input.setAttribute('placeholder', placeholderChinese);
+      for (const header of card.querySelectorAll('[data-testid="ask-question-header-text"]')) {
+        for (const label of header.querySelectorAll('span')) {
+          const classes = (label.getAttribute('class') || '').split(/\\s+/);
+          if (label.getAttribute('data-testid') === 'permission-app-header' || !['font-medium', 'text-foreground', 'min-w-0', 'break-words'].every(name => classes.includes(name))) continue;
+          const source = normalized(label);
+          if (!/^(Allow |Save rule to always allow )/.test(source)) continue;
+          const translated = translateText(source);
+          if (translated !== null && translated !== source) replaceLabel(label, translated);
+        }
+      }
+      for (const label of card.querySelectorAll('[data-testid="ask-question-option-text"]')) {
+        const source = normalized(label);
+        const translated = translateText(source);
+        optionLabels.add(source);
+        if (translated !== null) optionLabels.add(translated);
+        if (translated !== null && translated !== source) replaceLabel(label, translated);
+      }
+      for (const button of card.querySelectorAll('[data-testid="interaction-skip-button"], [data-testid="interaction-continue-button"]')) translateLeaves(button);
+    }
+    if (optionLabels.size) {
+      for (const label of document.querySelectorAll('[data-testid="ask-question-option-hover-card"]')) {
+        const source = normalized(label);
+        const translated = translateText(source);
+        if (translated !== null && translated !== source && (optionLabels.has(source) || optionLabels.has(translated))) replaceLabel(label, translated);
+      }
+    }
+  }
+
   function formatUiDate(value) {
     const months = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
     return value.replace(/\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),\\s+(\\d{4})\\b/g, (original, month, day, year) => Number(day) >= 1 && Number(day) <= 31 ? year + ' 年 ' + months[month] + ' 月 ' + Number(day) + ' 日' : original);
@@ -587,6 +687,8 @@ function buildInjectScript(dict) {
     if (quotaReachedNotice) return quotaReachedNotice[1] + ' 的配额已用尽。请切换到其他可用模型以继续。';
     const baselineResetNotice = normalizedText.match(/^Your plan's baseline quota will refresh on (.+)\\.$/);
     if (baselineResetNotice) return '你的方案基础配额将于 ' + formatUiDate(baselineResetNotice[1]) + '刷新。';
+    const quotaPermissionText = translateQuotaPermissionText(normalizedText);
+    if (quotaPermissionText !== null) return quotaPermissionText;
     // 1. Exact match in normalized dictionary
     if (normalizedDict[normalizedText]) {
       return normalizedDict[normalizedText];
@@ -889,6 +991,7 @@ function buildInjectScript(dict) {
           }
         }
       }
+      translatePermissionCards();
     });
 
     observer.observe(document.body, {
@@ -901,6 +1004,7 @@ function buildInjectScript(dict) {
 
     // Initial translation
     translateNode(document.body);
+    translatePermissionCards();
   }
 
   // Run when DOM is ready
