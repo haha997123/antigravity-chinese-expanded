@@ -2880,6 +2880,8 @@
   "Hook will only trigger if the tool name starts with browser_.": "仅在工具名称以 browser_ 开头时触发钩子。",
   "Ignore events emitted by automated review or robot accounts (groupagent-*).": "忽略自动化审查或机器人账号 (groupagent-*) 发出的事件。",
   "Match when push_def equals or is a child of the given PushDef prefix.": "当 push_def 等于或属于指定的 PushDef 前缀时匹配。",
+  "Google AI Plus users receive the minimum base limits on Antigravity. You can upgrade to Google AI Pro or above to receive higher rate limits.": "Google AI Plus 用户在 Antigravity 中享有最低基础限额。升级至 Google AI Pro 或更高方案可获得更高的请求限额。",
+  "Choose whether to be notified when the agent needs your attention or completes a task.": "选择是否在智能体需要你处理或完成任务时收到通知。",
   "There are no customizations enabled.": "当前未启用任何自定义配置。",
   "Give Feedback": "提供反馈",
   "Default and Auto need the terminal sandbox, which isn't available on this host.": "默认和自动模式需要终端沙盒，此设备暂不支持。",
