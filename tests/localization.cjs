@@ -21,6 +21,9 @@ class Element {
   matches(selector) {
     return selector.split(',').some(part => {
       part=part.trim();
+      if(/^(?:[a-z]+)?(?:\.[a-z0-9_-]+)+$/i.test(part)) { const chunks=part.split('.');return (!chunks[0]||this.tagName===chunks[0].toUpperCase())&&chunks.slice(1).every(name=>(this.attributes.class||'').split(' ').includes(name)); }
+      if(part==='[title]') return this.hasAttribute('title');
+      if(part==='span[data-screenshot-volatile]') return this.tagName==='SPAN' && this.hasAttribute('data-screenshot-volatile');
       if(part.startsWith('[data-testid=')) return part.includes('"'+this.attributes['data-testid']+'"');
       if(part.startsWith('[contenteditable]')) return this.attributes.contenteditable && this.attributes.contenteditable!=='false';
       if (/^[a-z]+$/i.test(part)) return this.tagName===part.toUpperCase();
@@ -86,6 +89,30 @@ function scenario(hostname) {
     'Save rule to always allow search for codex references?':'保存规则以始终允许搜索 codex references 吗？',
     'Allow search for Codex References 2.0 (local)/中文目录?':'允许搜索 Codex References 2.0 (local)/中文目录 吗？'
   });
+  const hiddenFixtures={
+    'Open URL in system browser: https://example.com/a?x=1':'在系统浏览器中打开网址：https://example.com/a?x=1',
+    'Configure Example Server, values missing':'配置 Example Server，尚有值未填写',
+    'View image attachment 2':'查看第 2 个图片附件',
+    'Label for Open Sesame':'Open Sesame 的标签',
+    'More for Copy File':'Copy File 的更多选项',
+    'Turn 2 of 3':'第 2 / 3 轮对话',
+    'Open Subagent: My Agent':'打开子智能体：My Agent',
+    'You need at least 50 AI Credits to send messages. To continue using Claude Example 7 now, purchase more AI Credits.':'发送消息至少需要 50 个 AI 积分。若要立即继续使用 Claude Example 7，请购买更多 AI 积分。',
+    'You need more AI Credits to send messages. To continue using this model now, purchase more AI Credits.':'发送消息需要更多 AI 积分。若要立即继续使用此模型，请购买更多 AI 积分。',
+    'You need at least 0.5 AI Credits to send messages. To continue using Gemini Future now, purchase more AI Credits. Your plan\'s baseline quota will refresh on January 2, 2029.':'发送消息至少需要 0.5 个 AI 积分。若要立即继续使用 Gemini Future，请购买更多 AI 积分。你的方案基础配额将于 2029 年 1 月 2 日刷新。',
+    'Your plan\'s baseline quota will refresh on November 18, 2030. To continue using this model now, enable AI Credit overages.':'你的方案基础配额将于 2030 年 11 月 18 日刷新。如需立即继续使用此模型，请启用 AI 积分超额使用。',
+    'Your quota for this model has been reached. Switch to another available model to continue.':'此模型的配额已用尽。请切换到其他可用模型以继续。',
+    'Your AI credits balance is too low to continue.':'你的 AI 积分余额不足，无法继续。',
+    'For Google AI Ultra accounts, telemetry is force disabled.':'对于 Google AI Ultra 账号，遥测已被强制禁用。',
+    'For your plan, this setting is disabled.':'对于你的方案，此设置已禁用。',
+    'For Google AI Pro accounts, this setting is disabled. This means Antigravity does not collect any of your prompts, content, or model responses, but will still collect general usage patterns (e.g., feature adoption, active user counts).':'对于 Google AI Pro 账号，此设置已禁用。这意味着 Antigravity 不会收集你的提示、内容或模型回复，但仍会收集一般使用情况（例如功能采用情况和活跃用户数量）。',
+    'You can upgrade to a Google AI Ultra plan to receive higher rate limits.':'你可以升级至 Google AI Ultra 方案，以获得更高的请求限额。',
+    'Minimum length is 7':'最少输入 7 个字符',
+    'Maximum value is 2.5':'最大值为 2.5',
+    'Input must match ^[A-Z]{2}\\d+$':'输入必须匹配 ^[A-Z]{2}\\d+$'
+  };
+  Object.assign(noticeFixtures,hiddenFixtures);
+  Object.assign(noticeFixtures,JSON.parse("{\"Loading media...\": \"正在加载媒体…\", \"No compatible devices found.\": \"未找到兼容的设备。\", \"Project Required\": \"需要项目\", \"License Required\": \"需要许可证\", \"Loading runs…\": \"正在加载运行记录…\", \"No runs yet\": \"暂无运行记录\", \"No pinned conversations\": \"没有置顶会话\", \"The remote workspace is not running\": \"远程工作区未运行\", \"This field is required\": \"此项为必填项\"}"));
   const noticeTextNodes=Object.keys(noticeFixtures).map(text=>new TextNode(text));
   const noticeFixturesContainer=new Element('div',noticeTextNodes);
   const quotaDetail=new TextNode('Daily limit, resets in 2h 3m');
@@ -129,7 +156,72 @@ function scenario(hostname) {
   const genericSearchHeader=new Element('div',[new Element('span',[genericSearchText],{class:'font-medium text-foreground min-w-0 break-words'})],{'data-testid':'ask-question-header-text'});
   genericSearchHeader.parentElement=genericQuestionCard;genericQuestionCard.childNodes.push(genericSearchHeader);
   const input=new Element('input',[],{placeholder:'Settings'}); input.value='Run'; input.type='text';
-  const body=new Element('body',[settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,quotaEmpty,modelNotice,modelUnavailable,viewPlans,noticeFixturesContainer,quotaDetail,quotaPercent,splitQuotaPercent,availableCredits,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,standalonePermissionAppHeader,permissionAgentWrapper,protectedUserWrapper,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),new Element('div',[userSearchText],{'data-testid':'user-message'}),new Element('div',[agentSearchText],{'data-testid':'agent-response'}),input]);
+  const timeFixtures=[['now','刚刚'],['just now','刚刚'],['Just now','刚刚'],['justnow','刚刚'],['5m','5 分钟前'],['2h ago','2 小时前'],['3d','3 天前'],['1w ago','1 周前'],['4mo','4 个月前'],['2y','2 年前'],['12s ago','12 秒前'],['5ms','5ms']];
+  const timeTexts=timeFixtures.map(([text])=>new TextNode(text));
+  const timeElements=timeTexts.map(text=>new Element('span',[text],{'data-screenshot-volatile':'true',class:'text-sm text-foreground opacity-60 min-w-4 shrink-0 text-right tabular-nums'}));
+  const timeTitle=new TextNode('5m ago');
+  const timeRow=new Element('div',[new Element('span',[timeTitle],{class:'truncate inline-block text-left w-full'}),...timeElements],{'data-testid':'conversation-row-sidebar','data-cascade-id':'example','aria-label':'5m ago'});
+  const toolbarTime=new TextNode('just now');
+  const toolbar=new Element('div',[new Element('span',[toolbarTime],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 whitespace-nowrap'})],{'data-testid':'cascade-system-message-toolbar'});
+  const stepTime=new TextNode('2m ago');
+  const stepTimestamp=new Element('div',[new Element('span',[stepTime],{'data-screenshot-volatile':'true',class:'text-xs text-muted-foreground cursor-default px-1 whitespace-nowrap'})],{class:'flex items-center select-none text-xs'});
+  const ordinaryNow=new TextNode('now');
+  const userActionNow=new TextNode('just now');
+  const userActionAgo=new TextNode('2h ago');
+  const userBodyAgo=new TextNode('2h ago');
+  const userActionCopy=new Element('button',[],{'data-testid':'copy-message-button','aria-label':'Copy Message','data-action':'copy'});
+  const userActions=new Element('div',[new Element('span',[userActionNow],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'}),new Element('span',[userActionAgo],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'}),userActionCopy],{'data-testid':'user-message-actions','data-no-scroll-jump':'true'});
+  const userStep=new Element('div',[new Element('div',[userBodyAgo],{'data-testid':'user-message'}),userActions],{'data-testid':'user-input-step'});
+  const unknownTimestamp=new TextNode('just now');
+  const userTimestamp=new TextNode('just now');
+  const activityText=new TextNode('Running run final video composition');
+  const activityTitle=new Element('span',[activityText],{title:'Running run final video composition',class:'text-muted-foreground truncate min-w-0'});
+  const activityButton=new Element('button',[activityTitle],{'data-testid':'tool-group-collapsible','aria-label':'Running run final video composition'});
+  const activityRawOutput=new TextNode('Running run final video composition');
+  const activityOther=new TextNode('Running Example_Task --name=Sample');
+  const activityStatus=new Element('div',[new Element('span',[activityOther],{title:'Running Example_Task --name=Sample',class:'text-muted-foreground truncate min-w-0'})],{'data-testid':'ephemeral-tool-status'});
+  const splitStatusPrefix=new TextNode('Running ');
+  const splitStatusResource=new TextNode('Reading Report');
+  const hiddenStatus=new TextNode('Reading Old Resource');
+  const splitStatus=new Element('button',[new Element('span',[new Element('span',[hiddenStatus],{'data-slot-out':'true'}),new Element('span',[splitStatusPrefix],{'data-slot-in':'true'}),new Element('span',[splitStatusResource],{'data-slot-in':'true'})],{class:'text-muted-foreground truncate min-w-0',title:'Running Reading Report'})],{'data-testid':'tool-group-collapsible'});
+  const changedFilesText=new TextNode('6 files changed');
+  const changedFilesSpan=new Element('span',[changedFilesText],{class:'text-secondary-foreground truncate'});
+  const changedFilesHeader=new Element('div',[new Element('div',[changedFilesSpan])],{'data-testid':'changed-files-card-header'});
+  const changedFileName=new TextNode('6 files changed');
+  const changedFilesCard=new Element('div',[changedFilesHeader,new Element('span',[changedFileName],{'data-testid':'changed-files-card-file'})],{'data-testid':'changed-files-card'});
+  const activityUserText=new TextNode('Running run final video composition');
+  const runtimeUiFixture=new Element('div',[timeRow,toolbar,stepTimestamp,userStep,new Element('span',[ordinaryNow]),new Element('span',[unknownTimestamp],{'data-screenshot-volatile':'true'}),new Element('div',[new Element('span',[userTimestamp],{'data-screenshot-volatile':'true',class:'text-xs text-muted-foreground cursor-default px-1 whitespace-nowrap'})],{'data-testid':'user-message',class:'flex items-center select-none text-xs'}),new Element('div',[activityButton,activityStatus,splitStatus,changedFilesCard,new Element('pre',[activityRawOutput])],{'data-testid':'agent-response'}),new Element('div',[activityUserText],{'data-testid':'user-message'})]);
+  const hiddenBodyText=new TextNode('Waiting for user input');
+  const hiddenUserText=new TextNode('Loading media...');
+  const errorPrefix=new TextNode('Could not load the app view: '),rawErrorDetail=new TextNode('RAW_ERROR_TEXT');
+  const mcpUiError=new Element('div',[errorPrefix,rawErrorDetail],{'data-testid':'mcp-app-view-error'});
+  const hiddenToolbarLabel=new TextNode('Expand questionnaire');
+  const hiddenToolbar=new Element('button',[hiddenToolbarLabel],{'data-testid':'ask-question-collapse-button','aria-label':'Expand questionnaire','aria-expanded':'false','data-action':'expand'});
+  const toolPrefix=new TextNode('Reading');
+  const toolContent=new TextNode('Reading Report');
+  const toolTitleRow=new Element('div',[new Element('span',[toolPrefix],{class:'text-muted-foreground'}),new Element('span',[toolContent],{class:'truncate text-muted-foreground [&_.text-foreground]:text-muted-foreground',title:'Reading Report'})],{class:'flex flex-row items-center gap-1 overflow-hidden whitespace-nowrap text-muted-foreground'});
+  const hiddenToolHeader=new Element('div',[new Element('div',[new Element('span',[toolTitleRow],{class:'truncate'})],{class:'flex min-w-0 items-center gap-x-1'})],{class:'group flex w-full min-w-0 items-center min-h-8 py-1 px-2 select-none transition-[background-color]'});
+  const toolWaitText=new TextNode('Waiting for user input');
+  const toolWaitLabel=new Element('div',[toolWaitText],{class:'mt-0.5 px-2 h-8 text-muted-foreground select-none flex items-center'});
+  const toolCodeText=new TextNode('Reading');
+  const formErrorText=new TextNode('Minimum length is 4');
+  const formInput=new Element('input',[],{type:'text',placeholder:'Sample_Resource'});formInput.value='DoNotTranslate_Value';
+  const form=new Element('form',[formInput,new Element('p',[formErrorText],{class:'text-red-500 text-sm pl-1'})],{class:'flex flex-col gap-1'});
+  const multiModelText=new TextNode('3 models selected');
+  const multiModelButton=new Element('button',[new Element('span',[multiModelText],{'data-tooltip-id':'model-count-tooltip'})],{'data-testid':'model-selector-trigger','aria-label':'Select model, current: 3 models selected','data-context-window':'default'});
+  const customModelName=new TextNode('3 models selected');
+  const customModelButton=new Element('button',[new Element('span',[customModelName])],{'data-testid':'model-selector-trigger','aria-label':'Select model, current: 3 models selected'});
+  const rawToolName=new TextNode('Open Terminal');
+  const noPrefixTitle=new Element('span',[rawToolName],{class:'truncate text-muted-foreground [&_.text-foreground]:text-muted-foreground',title:'Open Terminal'});
+  const noPrefixRow=new Element('div',[noPrefixTitle],{class:'flex flex-row items-center gap-1 overflow-hidden whitespace-nowrap text-muted-foreground'});
+  const noPrefixHeader=new Element('div',[new Element('div',[new Element('span',[noPrefixRow],{class:'truncate'})],{class:'flex min-w-0 items-center gap-x-1'})],{class:'group flex w-full min-w-0 items-center min-h-8 py-1 px-2 select-none'});
+  const hiddenLineNodes=[new TextNode('… ('),new TextNode('12'),new TextNode(' '),new TextNode('lines'),new TextNode(' above hidden)')];
+  const rawTerminalText=new TextNode('12 lines above hidden');
+  const hiddenLineMarker=new Element('div',hiddenLineNodes,{class:'text-muted-foreground'});
+  const hiddenTerminal=new Element('pre',[new Element('div',[hiddenLineMarker,rawTerminalText])],{class:'max-h-[300px] overflow-auto whitespace-pre-wrap break-words px-3 py-2 font-mono text-sm'});
+  const hiddenAgentUi=new Element('div',[mcpUiError,hiddenToolbar,hiddenToolHeader,noPrefixHeader,toolWaitLabel,new Element('pre',[toolCodeText]),form,multiModelButton,customModelButton,hiddenTerminal,new Element('p',[hiddenBodyText])],{'data-testid':'agent-response'});
+  const hiddenTestFixture=new Element('div',[hiddenAgentUi,new Element('div',[hiddenUserText],{'data-testid':'user-message'})]);
+  const body=new Element('body',[runtimeUiFixture,hiddenTestFixture,settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,quotaEmpty,modelNotice,modelUnavailable,viewPlans,noticeFixturesContainer,quotaDetail,quotaPercent,splitQuotaPercent,availableCredits,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,standalonePermissionAppHeader,permissionAgentWrapper,protectedUserWrapper,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),new Element('div',[userSearchText],{'data-testid':'user-message'}),new Element('div',[agentSearchText],{'data-testid':'agent-response'}),input]);
   const observers=[];
   class Observer {constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){}}
   vm.runInNewContext(injected,{window:{location:{protocol:'https:',hostname,pathname:'/customizations'}},document:{body,readyState:'complete',title:'Antigravity',querySelector(){return null;},querySelectorAll(selector){return body.querySelectorAll(selector);}},Node:{TEXT_NODE:3,ELEMENT_NODE:1},MutationObserver:Observer,console});
@@ -186,6 +278,99 @@ function scenario(hostname) {
     observers[0].callback([{type:'childList',target:lateCreationNotice,addedNodes:lateCreationNotice.childNodes}]);
     assert.equal(lateStrong.textContent,'Settings');
     assert.ok(!/Also includes|when working|automation\./.test(lateCreationNotice.textContent),'Late-mounted project fragments should compose before individual translation');
+    for(let index=0;index<timeFixtures.length;index++) assert.equal(timeTexts[index].textContent,timeFixtures[index][1]);
+    assert.equal(timeTitle.textContent,'5m ago','Conversation titles must not be treated as timestamps');
+    assert.equal(timeRow.getAttribute('aria-label'),'5m ago');
+    assert.equal(toolbarTime.textContent,'刚刚');
+    assert.equal(stepTime.textContent,'2 分钟前');
+    assert.equal(ordinaryNow.textContent,'now');
+    assert.equal(userActionNow.textContent,'刚刚');
+    assert.equal(userActionAgo.textContent,'2 小时前');
+    assert.equal(userBodyAgo.textContent,'2h ago');
+    assert.equal(userActionCopy.getAttribute('data-action'),'copy');
+    userActionNow.textContent='3m ago';
+    observers[0].callback([{type:'characterData',target:userActionNow}]);
+    assert.equal(userActionNow.textContent,'3 分钟前');
+    const lateUserTime=new TextNode('just now');
+    const lateUserLabel=new Element('span',[lateUserTime],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'});
+    lateUserLabel.parentElement=userActions;userActions.childNodes.push(lateUserLabel);
+    observers[0].callback([{type:'childList',target:userActions,addedNodes:[lateUserLabel]}]);
+    assert.equal(lateUserTime.textContent,'刚刚');
+    for(let conversation=0;conversation<3;conversation++) {
+      const firstMessageTime=new TextNode('just now');
+      const firstMessageLabel=new Element('span',[firstMessageTime],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'});
+      const firstMessageActions=new Element('div',[firstMessageLabel],{'data-testid':'user-message-actions','data-no-scroll-jump':'true'});
+      const firstMessage=new Element('div',[firstMessageActions],{'data-testid':'user-input-step','data-conversation-fixture':String(conversation)});
+      firstMessage.parentElement=body;body.childNodes.push(firstMessage);
+      observers[0].callback([{type:'childList',target:body,addedNodes:[firstMessage]}]);
+      assert.equal(firstMessageTime.textContent,'刚刚','New conversations must translate their first message timestamp');
+      firstMessageTime.textContent='2h ago';
+      observers[0].callback([{type:'characterData',target:firstMessageTime}]);
+      assert.equal(firstMessageTime.textContent,'2 小时前','Timestamps must stay translated as time advances');
+    }
+    assert.equal(unknownTimestamp.textContent,'just now');
+    assert.equal(userTimestamp.textContent,'just now');
+    assert.equal(activityText.textContent,'正在运行最终视频合成');
+    assert.equal(activityTitle.getAttribute('title'),'正在运行最终视频合成');
+    assert.equal(activityButton.getAttribute('aria-label'),'正在运行最终视频合成');
+    assert.equal(activityOther.textContent,'正在运行 Example_Task --name=Sample');
+    assert.equal(activityRawOutput.textContent,'Running run final video composition');
+    assert.equal(activityUserText.textContent,'Running run final video composition');
+    assert.equal(splitStatusPrefix.textContent,'正在运行 ');
+    assert.equal(splitStatusResource.textContent,'Reading Report');
+    assert.equal(hiddenStatus.textContent,'Reading Old Resource');
+    assert.equal(changedFilesText.textContent,'6 个文件已更改');
+    assert.equal(changedFileName.textContent,'6 files changed');
+    for (const [source,expected] of [['1 file changed','1 个文件已更改'],['12 files changed','12 个文件已更改']]) {
+      changedFilesText.textContent=source;
+      observers[0].callback([{type:'characterData',target:changedFilesText}]);
+      assert.equal(changedFilesText.textContent,expected);
+    }
+    timeTexts[0].textContent='8m';
+    observers[0].callback([{type:'characterData',target:timeTexts[0]}]);
+    assert.equal(timeTexts[0].textContent,'8 分钟前');
+    activityOther.textContent='Searching Example_Resource';
+    observers[0].callback([{type:'characterData',target:activityOther}]);
+    assert.equal(activityOther.textContent,'正在搜索 Example_Resource');
+    const lateTime=new TextNode('just now');
+    const lateStep=new Element('div',[new Element('span',[lateTime],{'data-screenshot-volatile':'true',class:'text-xs text-muted-foreground cursor-default px-1 whitespace-nowrap'})],{class:'flex items-center select-none text-xs'});
+    lateStep.parentElement=permissionAgentWrapper;permissionAgentWrapper.childNodes.push(lateStep);
+    observers[0].callback([{type:'childList',target:permissionAgentWrapper,addedNodes:[lateStep]}]);
+    assert.equal(lateTime.textContent,'刚刚');
+    const activityWrites=activityText.writes+activityOther.writes+splitStatusPrefix.writes+splitStatusResource.writes;
+    for(let index=0;index<10;index++) observers[0].callback([{type:'characterData',target:activityText}]);
+    assert.equal(activityText.writes+activityOther.writes+splitStatusPrefix.writes+splitStatusResource.writes,activityWrites,'Repeated UI mutations must not rewrite stable status labels');
+    assert.equal(errorPrefix.textContent,'无法加载应用视图：');
+    assert.equal(rawErrorDetail.textContent,'RAW_ERROR_TEXT');
+    assert.equal(hiddenToolbarLabel.textContent,dictionary['Expand questionnaire']);
+    assert.equal(hiddenToolbar.getAttribute('aria-expanded'),'false');
+    assert.equal(hiddenToolbar.getAttribute('data-action'),'expand');
+    assert.equal(toolPrefix.textContent,'正在读取');
+    assert.equal(toolContent.textContent,'Reading Report');
+    assert.equal(toolTitleRow.childNodes[1].getAttribute('title'),'Reading Report');
+    assert.equal(toolWaitText.textContent,'等待用户输入');
+    assert.equal(toolCodeText.textContent,'Reading');
+    assert.equal(formErrorText.textContent,'最少输入 4 个字符');
+    assert.equal(formInput.value,'DoNotTranslate_Value');
+    assert.equal(multiModelText.textContent,'已选择 3 个模型');
+    assert.ok(multiModelButton.getAttribute('aria-label').includes('已选择 3 个模型'));
+    assert.equal(multiModelButton.getAttribute('data-context-window'),'default');
+    assert.equal(customModelName.textContent,'3 models selected');
+    assert.equal(rawToolName.textContent,'Open Terminal');
+    assert.equal(noPrefixTitle.getAttribute('title'),'Open Terminal');
+    assert.equal(hiddenLineMarker.textContent,'…（上方已隐藏 12 行）');
+    assert.equal(rawTerminalText.textContent,'12 lines above hidden');
+    assert.equal(hiddenBodyText.textContent,'Waiting for user input');
+    assert.equal(hiddenUserText.textContent,'Loading media...');
+    const stableHiddenWrites=toolPrefix.writes+toolWaitText.writes+formErrorText.writes+hiddenLineNodes.reduce((sum,node)=>sum+node.writes,0);
+    for(let index=0;index<10;index++)observers[0].callback([{type:'characterData',target:formErrorText}]);
+    assert.equal(toolPrefix.writes+toolWaitText.writes+formErrorText.writes+hiddenLineNodes.reduce((sum,node)=>sum+node.writes,0),stableHiddenWrites,'Hidden UI observer must not rewrite stable labels');
+    formErrorText.textContent='Maximum length is 20';
+    observers[0].callback([{type:'characterData',target:formErrorText}]);
+    assert.equal(formErrorText.textContent,'最多输入 20 个字符');
+    const localizedNotices=noticeTextNodes.map(node=>node.textContent);
+    for(const node of noticeTextNodes)observers[0].callback([{type:'characterData',target:node}]);
+    assert.deepEqual(noticeTextNodes.map(node=>node.textContent),localizedNotices,'Translated labels must remain stable when resource names start with Open or Copy');
     assert.equal(permissionHeading.textContent,'允许搜索 codex references 吗？');
     for(const [source,expected] of [
       ['Allow search for antigravity references?','允许搜索 antigravity references 吗？'],

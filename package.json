@@ -1,6 +1,6 @@
 {
   "name": "antigravity-chinese-expanded",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Chinese UI patch for Antigravity 2.32.1 on Windows; plugin and skill names stay in English.",
   "license": "MIT",

@@ -659,15 +659,282 @@ function buildInjectScript(dict) {
     }
   }
 
+  const hiddenUiTemplateRules = [{"pattern": "^Give each Best of N fork its own clone of your Git repository instead of a copy-on-write overlay\\\\. Each fork is then a real repository, so commits it makes are kept when you choose it as the winner\\\\. Forks take longer to create, and the wait grows with the size of your repository\\\\.(.*?)$", "prefix": "Give each Best of N fork its own clone of your Git repository instead of a copy-on-write overlay. Each fork is then a real repository, so commits it makes are kept when you choose it as the winner. Forks take longer to create, and the wait grows with the size of your repository.", "replacement": "为 Best of N 的每个候选分支单独克隆 Git 仓库，使用完整仓库取代写入时复制的覆盖层。这样，每个分支都是实际仓库，选为胜出分支时会保留其中的提交。创建分支所需时间更长，仓库越大，等待时间越长。{0}", "maps": {}, "source_ids": [27], "fixed_length": 279}, {"pattern": "^Give each Best of N fork a full clone of your workspace, including its local commit history\\\\. Choosing a winner then gives your workspace that fork's state, so the commits it made are kept\\\\. Forks take longer to create than the default CitC clone\\\\.(.*?)$", "prefix": "Give each Best of N fork a full clone of your workspace, including its local commit history. Choosing a winner then gives your workspace that fork's state, so the commits it made are kept. Forks take longer to create than the default CitC clone.", "replacement": "为 Best of N 的每个候选分支完整克隆工作区，包括本地提交历史。选定胜出分支后，工作区将采用该分支的状态，并保留其中的提交。创建分支所需时间比默认的 CitC 克隆更长。{0}", "maps": {}, "source_ids": [26], "fixed_length": 245}, {"pattern": "^You have (.*?) conversations in progress\\\\. Updating will interrupt them, and they will automatically resume once the update completes\\\\.$", "prefix": "You have ", "replacement": "你有 {0} 个会话正在进行。更新会暂时中断这些会话，更新完成后会自动继续。", "maps": {}, "source_ids": [286], "fixed_length": 128}, {"pattern": "^Agents created by this (scheduled task|automation) run in a dedicated (workspace|project) with its own permissions\\\\. You can change the permissions in the (workspace|project) settings page\\\\.$", "prefix": "Agents created by this ", "replacement": "此{0}创建的智能体在专用{1}中运行，使用独立权限。您可以在{2}设置页面更改权限。", "maps": {"0": {"automation": "自动化", "scheduled task": "计划任务"}, "1": {"project": "项目", "workspace": "工作区"}, "2": {"project": "项目", "workspace": "工作区"}}, "source_ids": [160], "fixed_length": 123}, {"pattern": "^You have (.*?) conversations in progress\\\\. Updating will cancel them and you'll need to manually restart them\\\\.$", "prefix": "You have ", "replacement": "你有 {0} 个会话正在进行。更新会取消这些会话，你需要手动重新启动。", "maps": {}, "source_ids": [287], "fixed_length": 104}, {"pattern": "^No server is listening on port (.*?) inside the remote workspace\\\\. Start it, or ask the agent to, then retry\\\\.$", "prefix": "No server is listening on port ", "replacement": "远程工作区内没有服务器监听端口 {0}。请启动服务器，或让智能体启动，然后重试。", "maps": {}, "source_ids": [16], "fixed_length": 103}, {"pattern": "^Resume the conversation to start its workspace again, then start the server on port (.*?) and retry\\\\.$", "prefix": "Resume the conversation to start its workspace again, then start the server on port ", "replacement": "恢复会话以重新启动其工作区，然后在端口 {0} 启动服务器并重试。", "maps": {}, "source_ids": [15], "fixed_length": 95}, {"pattern": "^When toggled on, (.*?) collects usage data to help Google enhance performance and features\\\\.$", "prefix": "When toggled on, ", "replacement": "开启后，{0} 会收集使用数据，帮助 Google 改进性能和功能。", "maps": {}, "source_ids": [28], "fixed_length": 86}, {"pattern": "^(.*?) folders in this project could not be loaded because their locations are invalid\\\\.$", "prefix": "", "replacement": "此项目中的 {0} 个文件夹因位置无效而无法加载。", "maps": {}, "source_ids": [138], "fixed_length": 81}, {"pattern": "^Recording shortcut for (.*?)\\\\. Press keys to bind, Enter to save, Escape to cancel\\\\.$", "prefix": "Recording shortcut for ", "replacement": "正在为 {0} 录制快捷键。按下要绑定的按键，按 Enter 保存，按 Escape 取消。", "maps": {}, "source_ids": [45], "fixed_length": 77}, {"pattern": "^Microphone access for (.*?) was denied\\\\. Quit and reopen the app to be asked again\\\\.$", "prefix": "Microphone access for ", "replacement": "{0} 的麦克风访问权限被拒绝。退出并重新打开应用后，即可再次请求授权。", "maps": {}, "source_ids": [38], "fixed_length": 77}, {"pattern": "^The (.*?) MCP server requires configuration parameters before it can be started\\\\.$", "prefix": "The ", "replacement": "{0} MCP 服务器需要配置参数后才能启动。", "maps": {}, "source_ids": [186], "fixed_length": 75}, {"pattern": "^Receive product updates, tips, and promotions from Google (.*?) via email\\\\.$", "prefix": "Receive product updates, tips, and promotions from Google ", "replacement": "通过电子邮件接收 Google {0} 的产品更新、使用技巧和促销信息。", "maps": {}, "source_ids": [29], "fixed_length": 69}, {"pattern": "^Compare responses from (.*?) models side-by-side to find the best result\\\\.$", "prefix": "Compare responses from ", "replacement": "并排比较 {0} 个模型的回复，找出最佳结果。", "maps": {}, "source_ids": [231], "fixed_length": 68}, {"pattern": "^(.*?)\\\\. This commit is already pushed; amending will require a force push\\\\.$", "prefix": "", "replacement": "{0}。此提交已推送，修订后需要强制推送。", "maps": {}, "source_ids": [383], "fixed_length": 68}, {"pattern": "^The folder “(.*?)” does not exist\\\\. Would you like to create it\\\\?$", "prefix": "The folder “", "replacement": "文件夹“{0}”不存在。要创建它吗？", "maps": {}, "source_ids": [112], "fixed_length": 58}, {"pattern": "^Connect an account for (.*?) so the agent can run automations\\\\.$", "prefix": "Connect an account for ", "replacement": "为 {0} 连接账号，以便智能体运行自动化任务。", "maps": {}, "source_ids": [325], "fixed_length": 57}, {"pattern": "^This deletes (.*?) \\\\((.*?)\\\\) from your machine\\\\. You can't undo this\\\\.$", "prefix": "This deletes ", "replacement": "这将从您的设备中删除 {0}（{1}）。此操作无法撤销。", "maps": {"0": {"kind": "recording-count"}}, "source_ids": [58], "fixed_length": 56}, {"pattern": "^Environment paused\\\\. Click to resume it and load the (video|image)\\\\.$", "prefix": "Environment paused. Click to resume it and load the ", "replacement": "环境已暂停。点击恢复环境并加载{0}。", "maps": {"0": {"video": "视频", "image": "图片"}}, "source_ids": [127], "fixed_length": 53}, {"pattern": "^On top of those defaults, (.*?) requests the access below\\\\.$", "prefix": "On top of those defaults, ", "replacement": "除默认权限外，{0} 还请求以下访问权限。", "maps": {}, "source_ids": [158], "fixed_length": 53}, {"pattern": "^Cannot add folder: \\"(.*?)\\" is not a valid folder location\\\\.$", "prefix": "Cannot add folder: \\"", "replacement": "无法添加文件夹：“{0}”不是有效的文件夹位置。", "maps": {}, "source_ids": [82, 104], "fixed_length": 53}, {"pattern": "^Can’t create this path — “(.*?)” is a file, not a folder\\\\.$", "prefix": "Can’t create this path — “", "replacement": "无法创建此路径：“{0}”是文件，不是文件夹。", "maps": {}, "source_ids": [111], "fixed_length": 52}, {"pattern": "^This window's agents, files, and terminals are on (.*?)\\\\.$", "prefix": "This window's agents, files, and terminals are on ", "replacement": "此窗口的智能体、文件和终端位于 {0}。", "maps": {}, "source_ids": [101], "fixed_length": 51}, {"pattern": "^Low contrast ratio \\\\((.*?):1\\\\)\\\\. Text may be hard to read\\\\.$", "prefix": "Low contrast ratio (", "replacement": "对比度较低（{0}:1），文字可能难以阅读。", "maps": {}, "source_ids": [371], "fixed_length": 50}, {"pattern": "^Waiting for command completion \\\\(up to (.*?) seconds\\\\)$", "prefix": "Waiting for command completion (up to ", "replacement": "正在等待命令完成（最多 {0} 秒）", "maps": {}, "source_ids": [143], "fixed_length": 47}, {"pattern": "^Failed to save project Google3 configuration: (.*?)$", "prefix": "Failed to save project Google3 configuration: ", "replacement": "保存项目的 Google3 配置失败：{0}", "maps": {}, "source_ids": [66], "fixed_length": 46}, {"pattern": "^Agent permissions preset selector, current: (.*?)$", "prefix": "Agent permissions preset selector, current: ", "replacement": "智能体权限预设选择器，当前：{0}", "maps": {}, "source_ids": [238], "fixed_length": 44}, {"pattern": "^(.*?) is currently unable to handle this request\\\\.$", "prefix": "", "replacement": "{0} 当前无法处理此请求。", "maps": {}, "source_ids": [25], "fixed_length": 44}, {"pattern": "^Failed to save cloud permission settings: (.*?)$", "prefix": "Failed to save cloud permission settings: ", "replacement": "保存云端权限设置失败：{0}", "maps": {}, "source_ids": [59], "fixed_length": 42}, {"pattern": "^Cancel Questionnaire and Stop the Agent \\\\((.*?)\\\\)$", "prefix": "Cancel Questionnaire and Stop the Agent (", "replacement": "取消问卷并停止智能体（{0}）", "maps": {}, "source_ids": [132], "fixed_length": 42}, {"pattern": "^Sort and filter conversations \\\\((.*?) active\\\\)$", "prefix": "Sort and filter conversations (", "replacement": "排序和筛选会话（已启用 {0} 项筛选条件）", "maps": {}, "source_ids": [168], "fixed_length": 39}, {"pattern": "^Failed to save project permissions: (.*?)$", "prefix": "Failed to save project permissions: ", "replacement": "保存项目权限失败：{0}", "maps": {}, "source_ids": [85], "fixed_length": 36}, {"pattern": "^No more older messages, showing (.*?) of (.*?)$", "prefix": "No more older messages, showing ", "replacement": "没有更早的消息，已显示 {0} 条，共 {1} 条", "maps": {}, "source_ids": [290], "fixed_length": 36}, {"pattern": "^Minimum value is (-?\\\\d+(?:\\\\.\\\\d+)?)$", "prefix": "", "replacement": "最小值为 {0}", "maps": {}, "source_ids": ["elicitation-validation"], "fixed_length": 36}, {"pattern": "^Maximum value is (-?\\\\d+(?:\\\\.\\\\d+)?)$", "prefix": "", "replacement": "最大值为 {0}", "maps": {}, "source_ids": ["elicitation-validation"], "fixed_length": 36}, {"pattern": "^Install folder \\"(.*?)\\" is already in use$", "prefix": "Install folder \\"", "replacement": "安装文件夹“{0}”已被占用", "maps": {}, "source_ids": [184], "fixed_length": 35}, {"pattern": "^(.*?) could not find the requested page\\\\.$", "prefix": "", "replacement": "{0} 找不到请求的页面。", "maps": {}, "source_ids": [24], "fixed_length": 35}, {"pattern": "^Failed to save project settings: (.*?)$", "prefix": "Failed to save project settings: ", "replacement": "保存项目设置失败：{0}", "maps": {}, "source_ids": [84, 235], "fixed_length": 33}, {"pattern": "^Agent needs permission to act on (.*?)$", "prefix": "Agent needs permission to act on ", "replacement": "智能体需要您的授权才能操作{0}", "maps": {}, "source_ids": [128], "fixed_length": 33}, {"pattern": "^Load older messages, showing (.*?) of (.*?)$", "prefix": "Load older messages, showing ", "replacement": "加载更早的消息，已显示 {0} 条，共 {1} 条", "maps": {}, "source_ids": [289], "fixed_length": 33}, {"pattern": "^Account this MCP server uses: (.*?)$", "prefix": "Account this MCP server uses: ", "replacement": "此 MCP 服务器使用的账号：{0}", "maps": {}, "source_ids": [200], "fixed_length": 30}, {"pattern": "^Microphone blocked\\\\. Allow in (.*?)\\\\.$", "prefix": "Microphone blocked. Allow in ", "replacement": "麦克风已被阻止。请在 {0} 中允许访问。", "maps": {}, "source_ids": [37], "fixed_length": 30}, {"pattern": "^(.*?)\\\\. Starting in local workspace\\\\.$", "prefix": "", "replacement": "{0}。将在本地工作空间中启动。", "maps": {}, "source_ids": [239], "fixed_length": 30}, {"pattern": "^Failed to delete recordings: (.*?)$", "prefix": "Failed to delete recordings: ", "replacement": "删除录音失败：{0}", "maps": {}, "source_ids": [57], "fixed_length": 29}, {"pattern": "^Failed to unarchive project: (.*?)$", "prefix": "Failed to unarchive project: ", "replacement": "取消归档项目失败：{0}", "maps": {}, "source_ids": [115], "fixed_length": 29}, {"pattern": "^Failed to resolve folder: (.*?) \\\\((.*?)\\\\)$", "prefix": "Failed to resolve folder: ", "replacement": "解析文件夹失败：{0}（{1}）", "maps": {}, "source_ids": [83], "fixed_length": 29}, {"pattern": "^Marked (.*?) conversations as read$", "prefix": "Marked ", "replacement": "已将 {0} 个会话标为已读", "maps": {}, "source_ids": [169], "fixed_length": 29}, {"pattern": "^“(.*?)” isn’t a valid folder name\\\\.$", "prefix": "“", "replacement": "“{0}”不是有效的文件夹名称。", "maps": {}, "source_ids": [113], "fixed_length": 29}, {"pattern": "^Select at least (\\\\d+) items$", "prefix": "", "replacement": "至少选择 {0} 项", "maps": {}, "source_ids": ["elicitation-validation"], "fixed_length": 29}, {"pattern": "^Failed to select workspace: (.*?)$", "prefix": "Failed to select workspace: ", "replacement": "选择工作区失败：{0}", "maps": {}, "source_ids": [116], "fixed_length": 28}, {"pattern": "^Open URL in system browser: (.*?)$", "prefix": "Open URL in system browser: ", "replacement": "在系统浏览器中打开网址：{0}", "maps": {}, "source_ids": [140], "fixed_length": 28}, {"pattern": "^Agent permissions preset: (.*?), (.*?)$", "prefix": "Agent permissions preset: ", "replacement": "智能体权限预设：{0}，{1}", "maps": {}, "source_ids": [237], "fixed_length": 28}, {"pattern": "^(.*?) lines added, (.*?) lines removed$", "prefix": "", "replacement": "新增 {0} 行，删除 {1} 行", "maps": {}, "source_ids": [105], "fixed_length": 28}, {"pattern": "^Select at most (\\\\d+) items$", "prefix": "", "replacement": "最多选择 {0} 项", "maps": {}, "source_ids": ["elicitation-validation"], "fixed_length": 28}, {"pattern": "^Nothing is running on port (.*?)$", "prefix": "Nothing is running on port ", "replacement": "端口 {0} 上没有正在运行的服务", "maps": {}, "source_ids": [14], "fixed_length": 27}, {"pattern": "^No MCP servers found for \\"(.*?)\\"$", "prefix": "No MCP servers found for \\"", "replacement": "找不到与“{0}”匹配的 MCP 服务器", "maps": {}, "source_ids": [267], "fixed_length": 27}, {"pattern": "^Failed to create project: (.*?)$", "prefix": "Failed to create project: ", "replacement": "创建项目失败：{0}", "maps": {}, "source_ids": [137], "fixed_length": 26}, {"pattern": "^Edit side question title: (.*?)$", "prefix": "Edit side question title: ", "replacement": "编辑旁支提问标题：{0}", "maps": {}, "source_ids": [305], "fixed_length": 26}, {"pattern": "^A file already exists at (.*?)\\\\.$", "prefix": "A file already exists at ", "replacement": "{0} 处已存在文件。", "maps": {}, "source_ids": [110], "fixed_length": 26}, {"pattern": "^Configure (.*?), values missing$", "prefix": "Configure ", "replacement": "配置 {0}，尚有值未填写", "maps": {}, "source_ids": [193], "fixed_length": 26}, {"pattern": "^Make (.*?) the default (.*?) account$", "prefix": "Make ", "replacement": "将 {0} 设为默认的 {1} 账号", "maps": {}, "source_ids": [68], "fixed_length": 26}, {"pattern": "^Select project, current: (.*?)(.*?)$", "prefix": "Select project, current: ", "replacement": "选择项目，当前：{0}{1}", "maps": {}, "source_ids": [225], "fixed_length": 25}, {"pattern": "^Failed to save settings: (.*?)$", "prefix": "Failed to save settings: ", "replacement": "保存设置失败：{0}", "maps": {}, "source_ids": [236], "fixed_length": 25}, {"pattern": "^Filter skills and rules: (.*?)$", "prefix": "Filter skills and rules: ", "replacement": "筛选技能和规则：{0}", "maps": {}, "source_ids": [272], "fixed_length": 25}, {"pattern": "^Showing first (.*?) references$", "prefix": "Showing first ", "replacement": "仅显示前 {0} 条引用", "maps": {}, "source_ids": [171], "fixed_length": 25}, {"pattern": "^Open (.*?), (.*?)\\\\. Summarizing call$", "prefix": "Open ", "replacement": "打开{0}，{1}。正在总结通话", "maps": {}, "source_ids": [92], "fixed_length": 25}, {"pattern": "^Minimum length is (\\\\d+)$", "prefix": "", "replacement": "最少输入 {0} 个字符", "maps": {}, "source_ids": ["elicitation-validation"], "fixed_length": 25}, {"pattern": "^Maximum length is (\\\\d+)$", "prefix": "", "replacement": "最多输入 {0} 个字符", "maps": {}, "source_ids": ["elicitation-validation"], "fixed_length": 25}, {"pattern": "^Failed to save project: (.*?)$", "prefix": "Failed to save project: ", "replacement": "保存项目失败：{0}", "maps": {}, "source_ids": [77, 81, 102, 103], "fixed_length": 24}, {"pattern": "^No plugins found for \\"(.*?)\\"\\\\.$", "prefix": "No plugins found for \\"", "replacement": "找不到与“{0}”匹配的插件。", "maps": {}, "source_ids": [274], "fixed_length": 24}, {"pattern": "^Sign in from the (.*?) panel\\\\.$", "prefix": "Sign in from the ", "replacement": "请在 {0} 面板中登录。", "maps": {}, "source_ids": [31], "fixed_length": 24}, {"pattern": "^No (.*?) matching your search$", "prefix": "No ", "replacement": "没有与你的搜索匹配的{0}", "maps": {}, "source_ids": [363], "fixed_length": 24}, {"pattern": "^Authorization code for (.*?)$", "prefix": "Authorization code for ", "replacement": "{0} 的授权码", "maps": {}, "source_ids": [71], "fixed_length": 23}, {"pattern": "^Review permissions for (.*?)$", "prefix": "Review permissions for ", "replacement": "查看 {0} 的权限", "maps": {}, "source_ids": [157], "fixed_length": 23}, {"pattern": "^Failed to (set permissions for|mark as unread|archive|restore|unpin|move|pin) conversation$", "prefix": "Failed to ", "replacement": "{0}会话失败", "maps": {"0": {"pin": "置顶", "unpin": "取消置顶", "archive": "归档", "restore": "恢复", "mark as unread": "标为未读", "move": "移动", "set permissions for": "设置权限"}}, "source_ids": [109], "fixed_length": 23, "special_permissions_action": true}, {"pattern": "^Show (.*?) in the list again$", "prefix": "Show ", "replacement": "在列表中重新显示 {0}", "maps": {}, "source_ids": [97], "fixed_length": 23}, {"pattern": "^(.*?)\\\\. View site information$", "prefix": "", "replacement": "{0}。查看网站信息", "maps": {}, "source_ids": [17], "fixed_length": 23}, {"pattern": "^Input must match (.+)$", "prefix": "", "replacement": "输入必须匹配 {0}", "maps": {}, "source_ids": ["elicitation-validation"], "fixed_length": 23}, {"pattern": "^Preview unavailable — (.*?)$", "prefix": "Preview unavailable — ", "replacement": "无法预览 — {0}", "maps": {}, "source_ids": [214], "fixed_length": 22}, {"pattern": "^No connectors match “(.*?)”$", "prefix": "No connectors match “", "replacement": "没有与“{0}”匹配的连接器", "maps": {}, "source_ids": [233], "fixed_length": 22}, {"pattern": "^Created automation \\"(.*?)\\"\\\\.$", "prefix": "Created automation \\"", "replacement": "已创建自动化任务“{0}”。", "maps": {}, "source_ids": [354], "fixed_length": 22}, {"pattern": "^Opens external link: (.*?)$", "prefix": "Opens external link: ", "replacement": "打开外部链接：{0}", "maps": {}, "source_ids": [121], "fixed_length": 21}, {"pattern": "^Switch environment \\\\((.*?)\\\\)$", "prefix": "Switch environment (", "replacement": "切换环境（{0}）", "maps": {}, "source_ids": [288], "fixed_length": 21}, {"pattern": "^Remove shortcut (.*?) for (.*?)$", "prefix": "Remove shortcut ", "replacement": "移除 {1} 的快捷键 {0}", "maps": {}, "source_ids": [47], "fixed_length": 21}, {"pattern": "^Published (.*?) to origin\\\\.$", "prefix": "Published ", "replacement": "已将 {0} 发布到 origin。", "maps": {}, "source_ids": [389], "fixed_length": 21}, {"pattern": "^Manage (.*?) app settings\\\\.$", "prefix": "Manage ", "replacement": "管理 {0} 应用设置。", "maps": {}, "source_ids": [35], "fixed_length": 21}, {"pattern": "^Couldn't connect to (.*?)$", "prefix": "Couldn't connect to ", "replacement": "无法连接到 {0}", "maps": {}, "source_ids": [94], "fixed_length": 20}, {"pattern": "^Remove context from (.*?)$", "prefix": "Remove context from ", "replacement": "移除 {0} 的上下文", "maps": {}, "source_ids": [229], "fixed_length": 20}, {"pattern": "^Search Google for \\"(.*?)\\"$", "prefix": "Search Google for \\"", "replacement": "在 Google 上搜索“{0}”", "maps": {}, "source_ids": [308], "fixed_length": 20}, {"pattern": "^Sign in to (.*?) remotely$", "prefix": "Sign in to ", "replacement": "远程登录 {0}", "maps": {}, "source_ids": [73], "fixed_length": 20}, {"pattern": "^Scroll to: (.*?) on page (.*?)$", "prefix": "Scroll to: ", "replacement": "滚动到第 {1} 页的 {0}", "maps": {}, "source_ids": [374], "fixed_length": 20}, {"pattern": "^Typing '(.*?)' in Browser$", "prefix": "Typing '", "replacement": "正在浏览器中输入“{0}”", "maps": {}, "source_ids": [148], "fixed_length": 20}, {"pattern": "^Skip \\\\((.*?)\\\\), Skip All \\\\((.*?)\\\\)$", "prefix": "Skip (", "replacement": "跳过（{0}），全部跳过（{1}）", "maps": {}, "source_ids": [131], "fixed_length": 20}, {"pattern": "^Zoom (.*?)%, reset to fit$", "prefix": "Zoom ", "replacement": "缩放 {0}%，点击重置为适应窗口", "maps": {}, "source_ids": [5], "fixed_length": 20}, {"pattern": "^Hide (.*?) from this list$", "prefix": "Hide ", "replacement": "从此列表中隐藏 {0}", "maps": {}, "source_ids": [96], "fixed_length": 20}, {"pattern": "^Page (.*?) failed to load$", "prefix": "Page ", "replacement": "第 {0} 页加载失败", "maps": {}, "source_ids": [375], "fixed_length": 20}, {"pattern": "^(.*?) \\\\(disabled by admin\\\\)$", "prefix": "", "replacement": "{0}（已被管理员停用）", "maps": {}, "source_ids": [33], "fixed_length": 20}, {"pattern": "^(.*?)\\\\. Switch microphone\\\\.$", "prefix": "", "replacement": "{0}。切换麦克风。", "maps": {}, "source_ids": [250], "fixed_length": 20}, {"pattern": "^Amended commit on (.*?)\\\\.$", "prefix": "Amended commit on ", "replacement": "已修订 {0} 上的提交。", "maps": {}, "source_ids": [107], "fixed_length": 19}, {"pattern": "^Failed to update \\"(.*?)\\"$", "prefix": "Failed to update \\"", "replacement": "更新“{0}”失败", "maps": {}, "source_ids": [165, 326, 329, 347], "fixed_length": 19}, {"pattern": "^Failed to delete \\"(.*?)\\"$", "prefix": "Failed to delete \\"", "replacement": "删除“{0}”失败", "maps": {}, "source_ids": [340, 348, 360], "fixed_length": 19}, {"pattern": "^Failed to delete (workspace|project): (.*?)$", "prefix": "Failed to delete ", "replacement": "删除{0}失败：{1}", "maps": {"0": {"project": "项目", "workspace": "工作区"}}, "source_ids": [79], "fixed_length": 19}, {"pattern": "^Failed to start \\"(.*?)\\"\\\\.$", "prefix": "Failed to start \\"", "replacement": "启动“{0}”失败。", "maps": {}, "source_ids": [162], "fixed_length": 19}, {"pattern": "^Using default (.*?) name$", "prefix": "Using default ", "replacement": "使用默认的{0}名称", "maps": {}, "source_ids": [240], "fixed_length": 19}, {"pattern": "^Build with (.*?) Plugins$", "prefix": "Build with ", "replacement": "使用 {0} 插件构建", "maps": {}, "source_ids": [61], "fixed_length": 19}, {"pattern": "^Remove (.*?) from Recent$", "prefix": "Remove ", "replacement": "从最近记录中移除 {0}", "maps": {}, "source_ids": [95], "fixed_length": 19}, {"pattern": "^Typed '(.*?)' in Browser$", "prefix": "Typed '", "replacement": "已在浏览器中输入“{0}”", "maps": {}, "source_ids": [149], "fixed_length": 19}, {"pattern": "^Pushed (.*?) commit(|s) to (.*?)\\\\.$", "prefix": "Pushed ", "replacement": "已将 {0} 个提交推送到 {2}。", "maps": {}, "source_ids": [387], "fixed_length": 19}, {"pattern": "^Show (.*?) earlier steps$", "prefix": "Show ", "replacement": "显示之前的 {0} 个步骤", "maps": {}, "source_ids": [133], "fixed_length": 19}, {"pattern": "^Show (.*?) more subagent(|s)$", "prefix": "Show ", "replacement": "再显示 {0} 个子智能体", "maps": {}, "source_ids": [179, 284, 285], "fixed_length": 19}, {"pattern": "^Open conversation (.*?)$", "prefix": "Open conversation ", "replacement": "打开会话 {0}", "maps": {}, "source_ids": [118], "fixed_length": 18}, {"pattern": "^Select model with (.*?)$", "prefix": "Select model with ", "replacement": "通过 {0} 选择模型", "maps": {}, "source_ids": [297], "fixed_length": 18}, {"pattern": "^Failed to archive (.*?)$", "prefix": "Failed to archive ", "replacement": "归档{0}失败", "maps": {}, "source_ids": [301], "fixed_length": 18}, {"pattern": "^All changes since (.*?)$", "prefix": "All changes since ", "replacement": "{0} 之后的所有更改", "maps": {}, "source_ids": [390], "fixed_length": 18}, {"pattern": "^Exited with code (.*?)\\\\.$", "prefix": "Exited with code ", "replacement": "已退出，退出代码为 {0}。", "maps": {}, "source_ids": [34], "fixed_length": 18}, {"pattern": "^Failed to create (.*?)\\\\.$", "prefix": "Failed to create ", "replacement": "创建{0}失败。", "maps": {}, "source_ids": [355], "fixed_length": 18}, {"pattern": "^Publish (.*?) to origin$", "prefix": "Publish ", "replacement": "将 {0} 发布到 origin", "maps": {}, "source_ids": [385], "fixed_length": 18}, {"pattern": "^(.*?) download progress$", "prefix": "", "replacement": "{0} 的下载进度", "maps": {}, "source_ids": [20], "fixed_length": 18}, {"pattern": "^Add shortcut for (.*?)$", "prefix": "Add shortcut for ", "replacement": "为 {0} 添加快捷键", "maps": {}, "source_ids": [48], "fixed_length": 17}, {"pattern": "^More actions for (.*?)$", "prefix": "More actions for ", "replacement": "{0} 的更多操作", "maps": {}, "source_ids": [197, 264, 271], "fixed_length": 17}, {"pattern": "^Disable Word Wrap(.*?)$", "prefix": "Disable Word Wrap", "replacement": "禁用自动换行{0}", "maps": {}, "source_ids": [212], "fixed_length": 17}, {"pattern": "^Failed to create (.*?)$", "prefix": "Failed to create ", "replacement": "创建{0}失败", "maps": {}, "source_ids": [241], "fixed_length": 17}, {"pattern": "^Failed to delete (.*?)$", "prefix": "Failed to delete ", "replacement": "删除{0}失败", "maps": {}, "source_ids": [303], "fixed_length": 17}, {"pattern": "^Help us improve (.*?)\\\\.$", "prefix": "Help us improve ", "replacement": "帮助我们改进 {0}。", "maps": {}, "source_ids": [170], "fixed_length": 17}, {"pattern": "^System default \\\\((.*?)\\\\)$", "prefix": "System default (", "replacement": "系统默认（{0}）", "maps": {}, "source_ids": [249], "fixed_length": 17}, {"pattern": "^Failed to save \\"(.*?)\\"$", "prefix": "Failed to save \\"", "replacement": "保存“{0}”失败", "maps": {}, "source_ids": [330, 331], "fixed_length": 17}, {"pattern": "^Remove (.*?) from list$", "prefix": "Remove ", "replacement": "从列表中移除 {0}", "maps": {}, "source_ids": [23], "fixed_length": 17}, {"pattern": "^Reset (.*?) to default$", "prefix": "Reset ", "replacement": "将 {0} 重置为默认值", "maps": {}, "source_ids": [49], "fixed_length": 17}, {"pattern": "^\\\\+(.*?) more \\\\(Show all\\\\)$", "prefix": "+", "replacement": "另有 {0} 个（显示全部）", "maps": {}, "source_ids": [234], "fixed_length": 17}, {"pattern": "^Using browser · (.*?)$", "prefix": "Using browser · ", "replacement": "正在使用浏览器 · {0}", "maps": {}, "source_ids": [153], "fixed_length": 16}, {"pattern": "^Fix with Agent: (.*?)$", "prefix": "Fix with Agent: ", "replacement": "使用智能体修复：{0}", "maps": {}, "source_ids": [192], "fixed_length": 16}, {"pattern": "^Enable Word Wrap(.*?)$", "prefix": "Enable Word Wrap", "replacement": "启用自动换行{0}", "maps": {}, "source_ids": [213], "fixed_length": 16}, {"pattern": "^Playback speed (.*?)x$", "prefix": "Playback speed ", "replacement": "播放速度：{0} 倍", "maps": {}, "source_ids": [4], "fixed_length": 16}, {"pattern": "^Sign in to use (.*?)!$", "prefix": "Sign in to use ", "replacement": "登录以使用 {0}！", "maps": {}, "source_ids": [32], "fixed_length": 16}, {"pattern": "^Open the (.*?) plugin$", "prefix": "Open the ", "replacement": "打开 {0} 插件", "maps": {}, "source_ids": [120], "fixed_length": 16}, {"pattern": "^Push (.*?) commit(|s) to (.*?)$", "prefix": "Push ", "replacement": "将 {0} 个提交推送到 {2}", "maps": {}, "source_ids": [384], "fixed_length": 16}, {"pattern": "^(.*?), setup required$", "prefix": "", "replacement": "{0}，需要设置", "maps": {}, "source_ids": [205], "fixed_length": 16}, {"pattern": "^Move to Group: (.*?)$", "prefix": "Move to Group: ", "replacement": "移到分组：{0}", "maps": {}, "source_ids": [220], "fixed_length": 15}, {"pattern": "^Open Subagent: (.*?)$", "prefix": "Open Subagent: ", "replacement": "打开子智能体：{0}", "maps": {}, "source_ids": [296], "fixed_length": 15}, {"pattern": "^Go to turn (.*?) of (.*?)$", "prefix": "Go to turn ", "replacement": "转到第 {0} 轮，共 {1} 轮", "maps": {}, "source_ids": [293], "fixed_length": 15}, {"pattern": "^Duplicate (workspace|project) name$", "prefix": "Duplicate ", "replacement": "{0}名称重复", "maps": {"0": {"project": "项目", "workspace": "工作区"}}, "source_ids": [80], "fixed_length": 15}, {"pattern": "^Choose (Antigravity|Jetski)'s Voice$", "prefix": "Choose ", "replacement": "选择 {0} 的语音", "maps": {}, "source_ids": [55], "fixed_length": 15}, {"pattern": "^Reset (.*?) override(|s)$", "prefix": "Reset ", "replacement": "重置 {0} 项覆盖设置", "maps": {}, "source_ids": [36], "fixed_length": 15}, {"pattern": "^Show (.*?) in folder$", "prefix": "Show ", "replacement": "在文件夹中显示 {0}", "maps": {}, "source_ids": [21], "fixed_length": 15}, {"pattern": "^No (.*?) configured\\\\.$", "prefix": "No ", "replacement": "尚未配置{0}。", "maps": {}, "source_ids": [364], "fixed_length": 15}, {"pattern": "^Auth code for (.*?)$", "prefix": "Auth code for ", "replacement": "{0} 的授权码", "maps": {}, "source_ids": [62, 198, 232], "fixed_length": 14}, {"pattern": "^View Diff for (.*?)$", "prefix": "View Diff for ", "replacement": "查看 {0} 的差异", "maps": {}, "source_ids": [123], "fixed_length": 14}, {"pattern": "^Cost summary: (.*?)$", "prefix": "Cost summary: ", "replacement": "费用汇总：{0}", "maps": {}, "source_ids": [154], "fixed_length": 14}, {"pattern": "^Edit comment: (.*?)$", "prefix": "Edit comment: ", "replacement": "编辑评论：{0}", "maps": {}, "source_ids": [176], "fixed_length": 14}, {"pattern": "^Thinking for (.*?)s$", "prefix": "Thinking for ", "replacement": "已思考 {0} 秒", "maps": {}, "source_ids": [141], "fixed_length": 14}, {"pattern": "^Unfold lines (.*?)-(.*?)$", "prefix": "Unfold lines ", "replacement": "展开第 {0}-{1} 行", "maps": {}, "source_ids": [174], "fixed_length": 14}, {"pattern": "^Committed to (.*?)\\\\.$", "prefix": "Committed to ", "replacement": "已提交到 {0}。", "maps": {}, "source_ids": [382], "fixed_length": 14}, {"pattern": "^Shortcut (.*?) for (.*?)$", "prefix": "Shortcut ", "replacement": "{1} 的快捷键：{0}", "maps": {}, "source_ids": [46], "fixed_length": 14}, {"pattern": "^Enter (.*?) name\\\\.\\\\.\\\\.$", "prefix": "Enter ", "replacement": "输入{0}名称...", "maps": {}, "source_ids": [353], "fixed_length": 14}, {"pattern": "^Stop (.*?) selected$", "prefix": "Stop ", "replacement": "停止选中的 {0} 项", "maps": {}, "source_ids": [42], "fixed_length": 14}, {"pattern": "^(.*?) tool(s|) disabled$", "prefix": "", "replacement": "已停用 {0} 个工具", "maps": {}, "source_ids": [64, 196], "fixed_length": 14}, {"pattern": "^Connected to (.*?)$", "prefix": "Connected to ", "replacement": "已连接到 {0}", "maps": {}, "source_ids": [100, 381], "fixed_length": 13}, {"pattern": "^Conversation (.*?)$", "prefix": "Conversation ", "replacement": "会话 {0}", "maps": {}, "source_ids": [119], "fixed_length": 13}, {"pattern": "^Message from (.*?)$", "prefix": "Message from ", "replacement": "来自 {0} 的消息", "maps": {}, "source_ids": [135], "fixed_length": 13}, {"pattern": "^App view for (tool)$", "prefix": "App view for ", "replacement": "{0} 的应用视图", "maps": {"0": {"tool": "工具"}}, "source_ids": [139], "fixed_length": 13}, {"pattern": "^Voice Speed, (.*?)$", "prefix": "Voice Speed, ", "replacement": "语速，{0}", "maps": {}, "source_ids": [252], "fixed_length": 13}, {"pattern": "^Voice speed, (.*?)$", "prefix": "Voice speed, ", "replacement": "语速，{0}", "maps": {}, "source_ids": [253], "fixed_length": 13}, {"pattern": "^Restarted \\"(.*?)\\"\\\\.$", "prefix": "Restarted \\"", "replacement": "已重新启动“{0}”。", "maps": {}, "source_ids": [164, 332, 341], "fixed_length": 13}, {"pattern": "^Select (.*?) Theme$", "prefix": "Select ", "replacement": "选择 {0} 主题", "maps": {}, "source_ids": [262], "fixed_length": 13}, {"pattern": "^No (plugin|bundle|app) found for$", "prefix": "No ", "replacement": "未找到以下标识对应的{0}：", "maps": {"0": {"plugin": "插件", "bundle": "插件包", "app": "应用"}}, "source_ids": [191], "fixed_length": 13}, {"pattern": "^(.*?) tool(s|) enabled$", "prefix": "", "replacement": "已启用 {0} 个工具", "maps": {}, "source_ids": [63, 195], "fixed_length": 13}, {"pattern": "^(.*?) hidden hosts$", "prefix": "", "replacement": "{0} 台隐藏的主机", "maps": {}, "source_ids": [98], "fixed_length": 13}, {"pattern": "^(.*?) color picker$", "prefix": "", "replacement": "{0}取色器", "maps": {}, "source_ids": [370], "fixed_length": 13}, {"pattern": "^Go to slide (.*?)$", "prefix": "Go to slide ", "replacement": "转到第 {0} 张幻灯片", "maps": {}, "source_ids": [117], "fixed_length": 12}, {"pattern": "^Error while (.*?)$", "prefix": "Error while ", "replacement": "{0}时出错", "maps": {}, "source_ids": [122], "fixed_length": 12}, {"pattern": "^Forked from (.*?)$", "prefix": "Forked from ", "replacement": "分叉自 {0}", "maps": {}, "source_ids": [222], "fixed_length": 12}, {"pattern": "^No matching (.*?)$", "prefix": "No matching ", "replacement": "没有匹配的{0}", "maps": {}, "source_ids": [226], "fixed_length": 12}, {"pattern": "^Detached at (.*?)$", "prefix": "Detached at ", "replacement": "HEAD 分离于 {0}", "maps": {}, "source_ids": [242], "fixed_length": 12}, {"pattern": "^Details for (.*?)$", "prefix": "Details for ", "replacement": "{0} 的详情", "maps": {}, "source_ids": [279], "fixed_length": 12}, {"pattern": "^See more in (.*?)$", "prefix": "See more in ", "replacement": "在 {0} 中查看更多", "maps": {}, "source_ids": [281], "fixed_length": 12}, {"pattern": "^See less in (.*?)$", "prefix": "See less in ", "replacement": "在 {0} 中收起更多内容", "maps": {}, "source_ids": [282], "fixed_length": 12}, {"pattern": "^Running for (.*?)$", "prefix": "Running for ", "replacement": "已运行 {0}", "maps": {"0": {"kind": "duration"}}, "source_ids": [338], "fixed_length": 12}, {"pattern": "^Fold lines (.*?)-(.*?)$", "prefix": "Fold lines ", "replacement": "折叠第 {0}-{1} 行", "maps": {}, "source_ids": [173], "fixed_length": 12}, {"pattern": "^Welcome to (.*?)!$", "prefix": "Welcome to ", "replacement": "欢迎使用 {0}！", "maps": {}, "source_ids": [260], "fixed_length": 12}, {"pattern": "^(.*?), voice (.*?) of (.*?)$", "prefix": "", "replacement": "{0}，第 {1} 个语音，共 {2} 个", "maps": {}, "source_ids": [56], "fixed_length": 12}, {"pattern": "^(.*?)\\\\. Switch mic$", "prefix": "", "replacement": "{0}。切换麦克风", "maps": {}, "source_ids": [251], "fixed_length": 12}, {"pattern": "^Sign in to (.*?)$", "prefix": "Sign in to ", "replacement": "登录 {0}", "maps": {}, "source_ids": [187], "fixed_length": 11}, {"pattern": "^Disconnect (.*?)$", "prefix": "Disconnect ", "replacement": "断开 {0} 的连接", "maps": {}, "source_ids": [202], "fixed_length": 11}, {"pattern": "^Plugins in (.*?)$", "prefix": "Plugins in ", "replacement": "{0} 中的插件", "maps": {}, "source_ids": [280], "fixed_length": 11}, {"pattern": "^Go to page (.*?)$", "prefix": "Go to page ", "replacement": "转到第 {0} 页", "maps": {}, "source_ids": [376], "fixed_length": 11}, {"pattern": "^Send all \\\\((.*?)\\\\)$", "prefix": "Send all (", "replacement": "全部发送（{0}）", "maps": {}, "source_ids": [181], "fixed_length": 11}, {"pattern": "^Pushed to (.*?)\\\\.$", "prefix": "Pushed to ", "replacement": "已推送到 {0}。", "maps": {}, "source_ids": [388], "fixed_length": 11}, {"pattern": "^Enabled \\"(.*?)\\"\\\\.$", "prefix": "Enabled \\"", "replacement": "已启用“{0}”。", "maps": {}, "source_ids": [159], "fixed_length": 11}, {"pattern": "^Started \\"(.*?)\\"\\\\.$", "prefix": "Started \\"", "replacement": "已启动“{0}”。", "maps": {}, "source_ids": [161], "fixed_length": 11}, {"pattern": "^Deleted \\"(.*?)\\"\\\\.$", "prefix": "Deleted \\"", "replacement": "已删除“{0}”。", "maps": {}, "source_ids": [339, 349, 359], "fixed_length": 11}, {"pattern": "^Loading (plugin|bundle|app)\\\\.\\\\.\\\\.$", "prefix": "Loading ", "replacement": "正在加载{0}…", "maps": {"0": {"plugin": "插件", "bundle": "插件包", "app": "应用"}}, "source_ids": [190], "fixed_length": 11}, {"pattern": "^Open (.*?) skill$", "prefix": "Open ", "replacement": "打开 {0} 技能", "maps": {}, "source_ids": [9], "fixed_length": 11}, {"pattern": "^Add (.*?) (plugin|plugins) from (.*?)$", "prefix": "Add ", "replacement": "从 {2} 添加 {0} 个插件", "maps": {}, "source_ids": [263], "fixed_length": 11}, {"pattern": "^(Disable|Enable) (.*?) tool for (.*?)$", "prefix": "", "replacement": "{0} {2} 的 {1} 工具", "maps": {"0": {"Enable": "启用", "Disable": "禁用"}}, "source_ids": [65, 199], "fixed_length": 11}, {"pattern": "^(.*?) CEL values$", "prefix": "", "replacement": "{0} 的 CEL 值", "maps": {}, "source_ids": [323], "fixed_length": 11}, {"pattern": "^Label for (.*?)$", "prefix": "Label for ", "replacement": "{0} 的标签", "maps": {}, "source_ids": [70], "fixed_length": 10}, {"pattern": "^Configure (.*?)$", "prefix": "Configure ", "replacement": "配置 {0}", "maps": {}, "source_ids": [185, 194, 207], "fixed_length": 10}, {"pattern": "^Reconnect (.*?)$", "prefix": "Reconnect ", "replacement": "重新连接 {0}", "maps": {}, "source_ids": [201], "fixed_length": 10}, {"pattern": "^No remote (.*?)$", "prefix": "No remote ", "replacement": "没有远程{0}", "maps": {}, "source_ids": [227], "fixed_length": 10}, {"pattern": "^Send now: (.*?)$", "prefix": "Send now: ", "replacement": "立即发送：{0}", "maps": {}, "source_ids": [257], "fixed_length": 10}, {"pattern": "^See all \\\\((.*?)\\\\)$", "prefix": "See all (", "replacement": "查看全部（{0}）", "maps": {}, "source_ids": [223], "fixed_length": 10}, {"pattern": "^Edit (workspace|project) name$", "prefix": "Edit ", "replacement": "编辑{0}名称", "maps": {"0": {"project": "项目", "workspace": "工作区"}}, "source_ids": [86], "fixed_length": 10}, {"pattern": "^See (.*?) more (.*?)$", "prefix": "See ", "replacement": "再查看 {0} 个{1}", "maps": {}, "source_ids": [268], "fixed_length": 10}, {"pattern": "^(.*?)\\\\. Show in (.*?)$", "prefix": "", "replacement": "{0}。在{1}中显示", "maps": {}, "source_ids": [304], "fixed_length": 10}, {"pattern": "^More for (.*?)$", "prefix": "More for ", "replacement": "{0} 的更多选项", "maps": {}, "source_ids": [74], "fixed_length": 9}, {"pattern": "^See more (.*?)$", "prefix": "See more ", "replacement": "查看更多{0}", "maps": {}, "source_ids": [269], "fixed_length": 9}, {"pattern": "^Open (.*?), (.*?)\\\\. (.*?)$", "prefix": "Open ", "replacement": "打开{0}，{1}。{2}", "maps": {}, "source_ids": [91], "fixed_length": 9}, {"pattern": "^Turn (.*?) of (.*?)$", "prefix": "Turn ", "replacement": "第 {0} 轮，共 {1} 轮", "maps": {}, "source_ids": [294], "fixed_length": 9}, {"pattern": "^Step (.*?) of (.*?)$", "prefix": "Step ", "replacement": "第 {0} 步，共 {1} 步", "maps": {}, "source_ids": [357], "fixed_length": 9}, {"pattern": "^See \\\\[(.*?)\\\\]\\\\((.*?)\\\\)\\\\.$", "prefix": "See [", "replacement": "参阅 [{0}]({1})。", "maps": {}, "source_ids": [361], "fixed_length": 9}, {"pattern": "^See (.*?) more$", "prefix": "See ", "replacement": "再查看 {0} 个", "maps": {}, "source_ids": [270], "fixed_length": 9}, {"pattern": "^Open in (.*?)$", "prefix": "Open in ", "replacement": "在 {0} 中打开", "maps": {}, "source_ids": [7], "fixed_length": 8}, {"pattern": "^Connect (.*?)$", "prefix": "Connect ", "replacement": "连接 {0}", "maps": {}, "source_ids": [76], "fixed_length": 8}, {"pattern": "^Version (.*?)$", "prefix": "Version ", "replacement": "版本 {0}", "maps": {}, "source_ids": [89], "fixed_length": 8}, {"pattern": "^Install (.*?)$", "prefix": "Install ", "replacement": "安装 {0}", "maps": {}, "source_ids": [183], "fixed_length": 8}, {"pattern": "^Restart (.*?)$", "prefix": "Restart ", "replacement": "重新启动 {0}", "maps": {}, "source_ids": [342], "fixed_length": 8}, {"pattern": "^Run (.*?) now$", "prefix": "Run ", "replacement": "立即运行 {0}", "maps": {}, "source_ids": [335, 343, 352], "fixed_length": 8}, {"pattern": "^Source (.*?)$", "prefix": "Source ", "replacement": "来源 {0}", "maps": {}, "source_ids": [11], "fixed_length": 7}, {"pattern": "^Cancel (.*?)$", "prefix": "Cancel ", "replacement": "取消 {0}", "maps": {}, "source_ids": [22], "fixed_length": 7}, {"pattern": "^Toggle (.*?)$", "prefix": "Toggle ", "replacement": "切换 {0}", "maps": {}, "source_ids": [54, 273], "fixed_length": 7}, {"pattern": "^Delete (.*?)$", "prefix": "Delete ", "replacement": "删除{0}", "maps": {}, "source_ids": [78, 87, 265, 336], "fixed_length": 7}, {"pattern": "^Set up (.*?)$", "prefix": "Set up ", "replacement": "设置 {0}", "maps": {}, "source_ids": [156], "fixed_length": 7}, {"pattern": "^Remove (.*?)$", "prefix": "Remove ", "replacement": "移除 {0}", "maps": {}, "source_ids": [246, 312, 321, 322], "fixed_length": 7}, {"pattern": "^Enable (.*?)$", "prefix": "Enable ", "replacement": "启用 {0}", "maps": {}, "source_ids": [266, 334], "fixed_length": 7}, {"pattern": "^Adding (.*?)$", "prefix": "Adding ", "replacement": "正在添加 {0}", "maps": {}, "source_ids": [275], "fixed_length": 7}, {"pattern": "^Resume (.*?)$", "prefix": "Resume ", "replacement": "恢复 {0}", "maps": {}, "source_ids": [346, 351], "fixed_length": 7}, {"pattern": "^Create (.*?)$", "prefix": "Create ", "replacement": "创建{0}", "maps": {}, "source_ids": [358], "fixed_length": 7}, {"pattern": "^Open (.*?), (.*?)$", "prefix": "Open ", "replacement": "打开{0}，{1}", "maps": {}, "source_ids": [93], "fixed_length": 7}, {"pattern": "^Chunk (.*?)$", "prefix": "Chunk ", "replacement": "片段 {0}", "maps": {}, "source_ids": [144], "fixed_length": 6}, {"pattern": "^Unpin (.*?)$", "prefix": "Unpin ", "replacement": "取消固定 {0}", "maps": {}, "source_ids": [310], "fixed_length": 6}, {"pattern": "^Close (.*?)$", "prefix": "Close ", "replacement": "关闭 {0}", "maps": {}, "source_ids": [311], "fixed_length": 6}, {"pattern": "^Pause (.*?)$", "prefix": "Pause ", "replacement": "暂停 {0}", "maps": {}, "source_ids": [345, 350], "fixed_length": 6}, {"pattern": "^Stop (.*?)\\\\?$", "prefix": "Stop ", "replacement": "停止 {0}？", "maps": {"0": {"kind": "item-count"}}, "source_ids": [43], "fixed_length": 6}, {"pattern": "^Add \\\\((.*?)\\\\)$", "prefix": "Add (", "replacement": "添加（{0}）", "maps": {}, "source_ids": [75], "fixed_length": 6}, {"pattern": "^View (video attachment|image attachment) (\\\\d+)$", "prefix": "View ", "replacement": "查看第 {1} 个{0}", "maps": {"0": {"video attachment": "视频附件", "image attachment": "图片附件"}}, "source_ids": [126], "fixed_length": 6}, {"pattern": "^See (.*?): (.*?)$", "prefix": "See ", "replacement": "参阅 {0}：{1}", "maps": {}, "source_ids": [327], "fixed_length": 6}, {"pattern": "^Open (.*?)$", "prefix": "Open ", "replacement": "打开 {0}", "maps": {}, "source_ids": [19, 125, 175, 180, 245, 291, 307], "fixed_length": 5}, {"pattern": "^Stop (.*?)$", "prefix": "Stop ", "replacement": "停止 {0}", "maps": {}, "source_ids": [44, 134], "fixed_length": 5}, {"pattern": "^this (workspace|project)$", "prefix": "this ", "replacement": "此{0}", "maps": {"0": {"project": "项目", "workspace": "工作区"}}, "source_ids": [88], "fixed_length": 5}, {"pattern": "^Copy (.*?)$", "prefix": "Copy ", "replacement": "复制 {0}", "maps": {}, "source_ids": [167], "fixed_length": 5}, {"pattern": "^Rule (.*?)$", "prefix": "Rule ", "replacement": "规则 {0}", "maps": {}, "source_ids": [203], "fixed_length": 5}, {"pattern": "^View (.*?)$", "prefix": "View ", "replacement": "查看 {0}", "maps": {}, "source_ids": [254, 255], "fixed_length": 5}, {"pattern": "^Turn (.*?)$", "prefix": "Turn ", "replacement": "第 {0} 轮", "maps": {}, "source_ids": [292], "fixed_length": 5}, {"pattern": "^Line (.*?)$", "prefix": "Line ", "replacement": "折线系列 {0}", "maps": {}, "source_ids": [366], "fixed_length": 5}, {"pattern": "^Add (.*?)$", "prefix": "Add ", "replacement": "添加 {0}", "maps": {}, "source_ids": [276, 362], "fixed_length": 4}, {"pattern": "^New (.*?)$", "prefix": "New ", "replacement": "新建{0}", "maps": {}, "source_ids": [356], "fixed_length": 4}, {"pattern": "^Bar (.*?)$", "prefix": "Bar ", "replacement": "柱形系列 {0}", "maps": {}, "source_ids": [365], "fixed_length": 4}, {"pattern": "^On (.*?)$", "prefix": "On ", "replacement": "运行于 {0}", "maps": {}, "source_ids": [99], "fixed_length": 3}, {"pattern": "^in (.*?)$", "prefix": "in ", "replacement": "在 {0} 中", "maps": {}, "source_ids": [261], "fixed_length": 3}, {"pattern": "^Up (.*?)$", "prefix": "Up ", "replacement": "已运行 {0}", "maps": {"0": {"kind": "duration"}}, "source_ids": [344], "fixed_length": 3}].map(rule => ({...rule, expression:new RegExp(rule.pattern)}));
+  function translateHiddenUiTemplate(text) {
+    if (text.length > 8000) return null;
+    for (const rule of hiddenUiTemplateRules) {
+      if (rule.prefix && !text.startsWith(rule.prefix)) continue;
+      const matched = rule.expression.exec(text);
+      if (!matched) continue;
+      if (rule.special_permissions_action && matched[1] === 'set permissions for') return '设置会话权限失败';
+      const values = matched.slice(1);
+      for (const [index, map] of Object.entries(rule.maps)) {
+        const value = values[Number(index)];
+        if (Object.hasOwn(map, value)) values[Number(index)] = map[value];
+        else if (map.kind === 'item-count' || map.kind === 'recording-count') {
+          const count = value.match(map.kind === 'item-count' ? /^(\\d+) items?$/ : /^(\\d+) call recordings?$/);
+          if (count) values[Number(index)] = count[1] + (map.kind === 'item-count' ? ' 项' : ' 段通话录音');
+        } else if (map.kind === 'duration' && /^(?:\\d+\\s*[dhms]\\s*)+$/.test(value)) {
+          const units = {d:'天',h:'小时',m:'分钟',s:'秒'};
+          values[Number(index)] = value.replace(/(\\d+)\\s*([dhms])/g, (_, number, unit) => number + ' ' + units[unit] + ' ').trim();
+        }
+      }
+      return rule.replacement.replace(/\\{(\\d+)\\}/g, (_, index) => values[Number(index)] ?? '');
+    }
+    return null;
+  }
+
+
+  function translateMembershipText(text) {
+    const credits = text.match(/^You need (more|at least (\\d+(?:\\.\\d+)?)) AI Credits to send messages\\. To continue using (.+?) now, purchase more AI Credits\\.(?: Your plan's baseline quota will refresh on (.+)\\.)?$/);
+    if (credits) {
+      const model = credits[3] === 'this model' ? '此模型' : credits[3];
+      let translated = credits[1] === 'more' ? '发送消息需要更多 AI 积分。' : '发送消息至少需要 ' + credits[2] + ' 个 AI 积分。';
+      translated += '若要立即继续使用' + (model === '此模型' ? '' : ' ') + model + '，请购买更多 AI 积分。';
+      if (credits[4]) translated += '你的方案基础配额将于 ' + formatUiDate(credits[4]) + '刷新。';
+      return translated;
+    }
+    const baselineAndOverage = text.match(/^Your plan's baseline quota will refresh on (.+)\\. To continue using this model now, enable AI Credit overages\\.$/);
+    if (baselineAndOverage) return '你的方案基础配额将于 ' + formatUiDate(baselineAndOverage[1]) + '刷新。如需立即继续使用此模型，请启用 AI 积分超额使用。';
+    const creditSwitch = text.match(/^When toggled on, (.+?) will use your AI credits to fulfill model requests once you're out of model quota\\. \\1 will always use your model quota first before using AI credits\\.$/);
+    if (creditSwitch) return '开启后，一旦你的模型配额耗尽，' + creditSwitch[1] + ' 将使用你的 AI 积分来满足模型请求。' + creditSwitch[1] + ' 始终会先使用你的模型配额，然后再使用 AI 积分。';
+    const upgrade = text.match(/^You can upgrade to (?:a |an )?(Google AI (?:Plus|Pro|Ultra)) plan to receive higher rate limits\\.$/);
+    if (upgrade) return '你可以升级至 ' + upgrade[1] + ' 方案，以获得更高的请求限额。';
+    const eligibility = text.match(/^(Sorry, this account is ineligible to use|Further action is required to use) (.+)$/);
+    if (eligibility) return eligibility[1] === 'Sorry, this account is ineligible to use' ? '抱歉，此账号不符合使用 ' + eligibility[2] + ' 的资格' : '使用 ' + eligibility[2] + ' 前需要完成其他操作';
+    const controlled = text.match(/^(?:(.+?)\\s+)?For (.+?), (telemetry is force disabled|this setting is disabled)\\.(?: This means (.+?) does not collect any of your prompts, content, or model responses, but will still collect general usage patterns \\(e\\.g\\., feature adoption, active user counts\\)\\.)?$/);
+    if (controlled) {
+      const intro = controlled[1] ? normalizedDict[controlled[1]] : '';
+      if (controlled[1] && !intro) return null;
+      const plan = controlled[2] === 'your plan' ? '你的方案' : controlled[2].replace(/ accounts$/, ' 账号');
+      let translated = (intro ? intro + ' ' : '') + '对于' + (plan === '你的方案' ? '' : ' ') + plan + '，' + (controlled[3] === 'telemetry is force disabled' ? '遥测已被强制禁用。' : '此设置已禁用。');
+      if (controlled[4]) translated += '这意味着 ' + controlled[4] + ' 不会收集你的提示、内容或模型回复，但仍会收集一般使用情况（例如功能采用情况和活跃用户数量）。';
+      return translated;
+    }
+    return null;
+  }
+
+
+  function translateRuntimeUiLabels() {
+    if (typeof document.querySelectorAll !== 'function') return;
+    function hasClasses(element, names) {
+      const classes = (element.getAttribute('class') || '').split(/\\s+/);
+      return names.every(name => classes.includes(name));
+    }
+    function protectedContent(node) {
+      for (let element = node; element; element = element.parentElement) {
+        if (EXCLUDE_TAGS.has(element.tagName) || element.matches('.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])')) return true;
+        if (['user-message', 'live-user-turn'].includes(element.getAttribute('data-testid'))) return true;
+      }
+      return false;
+    }
+    function timeText(text) {
+      const source = text.trim();
+      if (/^(?:just\\s*now|now)$/i.test(source)) return '刚刚';
+      const relative = source.match(/^(\\d+)\\s*(mo|s|m|h|d|w|y)(?:\\s+ago)?$/i);
+      if (!relative) return null;
+      const units = {s:'秒', m:'分钟', h:'小时', d:'天', w:'周', mo:'个月', y:'年'};
+      return relative[1] + ' ' + units[relative[2].toLowerCase()] + '前';
+    }
+    for (const label of document.querySelectorAll('span[data-screenshot-volatile]')) {
+      if (label.tagName !== 'SPAN' || protectedContent(label)) continue;
+      const sidebar = hasClasses(label, ['text-sm', 'text-foreground', 'opacity-60', 'min-w-4', 'shrink-0', 'text-right', 'tabular-nums']) &&
+        ['conversation-row-sidebar', 'conversation-row-history'].some(id => hasAncestorTestId(label, id));
+      const toolbar = hasClasses(label, ['text-sm', 'text-muted-foreground', 'select-none', 'px-1', 'whitespace-nowrap']) && hasAncestorTestId(label, 'cascade-system-message-toolbar');
+      const userActions = hasClasses(label, ['text-sm', 'text-muted-foreground', 'select-none', 'px-1', 'mr-1', 'self-center', 'whitespace-nowrap']) && label.parentElement && label.parentElement.getAttribute('data-testid') === 'user-message-actions' && label.parentElement.hasAttribute('data-no-scroll-jump') && hasAncestorTestId(label, 'user-input-step');
+      const parent = label.parentElement;
+      const step = hasClasses(label, ['text-xs', 'text-muted-foreground', 'cursor-default', 'px-1', 'whitespace-nowrap']) && parent && hasClasses(parent, ['flex', 'items-center', 'select-none', 'text-xs']);
+      if (!sidebar && !toolbar && !step && !userActions) continue;
+      if (label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
+      const translated = timeText(label.textContent);
+      if (translated !== null && translated !== label.textContent) label.childNodes[0].textContent = translated;
+    }
+    function statusText(text) {
+      const fixedStatuses = new Set(['Working', 'Thinking', 'Done', 'Ran command', 'Running command', 'Waiting for your answer', 'Waiting for your approval']);
+      if (fixedStatuses.has(text.trim()) && normalizedDict[text.trim()]) return normalizedDict[text.trim()];
+      // A known task label from the reported screenshot; never applied to commands or output.
+      if (text.trim() === 'Running run final video composition') return '正在运行最终视频合成';
+      const match = text.match(/^(\\s*)(Running|Reading|Editing|Listing|Searching)(?=\\s|$)(.*)$/);
+      if (!match) return null;
+      const names = {Running:'正在运行', Reading:'正在读取', Editing:'正在编辑', Listing:'正在列出', Searching:'正在搜索'};
+      return match[1] + names[match[2]] + match[3];
+    }
+    for (const root of document.querySelectorAll('[data-testid="tool-group-collapsible"], [data-testid="ephemeral-tool-status"]')) {
+      const id = root.getAttribute('data-testid');
+      if (!((id === 'tool-group-collapsible' && root.tagName === 'BUTTON') || (id === 'ephemeral-tool-status' && root.tagName === 'DIV')) || protectedContent(root)) continue;
+      const aria = root.getAttribute('aria-label');
+      if (aria) {
+        const translated = statusText(aria);
+        if (translated !== null && translated !== aria) root.setAttribute('aria-label', translated);
+      }
+      for (const label of root.querySelectorAll('[title]')) {
+        if (!hasClasses(label, ['text-muted-foreground', 'truncate', 'min-w-0']) || protectedContent(label)) continue;
+        const title = label.getAttribute('title');
+        const translatedTitle = title && statusText(title);
+        if (translatedTitle !== null && translatedTitle !== title) label.setAttribute('title', translatedTitle);
+        const leaves = [];
+        function collect(node) {
+          if (node.nodeType === Node.TEXT_NODE) { leaves.push(node); return; }
+          if (node.nodeType !== Node.ELEMENT_NODE || protectedContent(node) || node.tagName === 'SVG' || node.hasAttribute('data-slot-out') || node.getAttribute('aria-hidden') === 'true') return;
+          for (const child of node.childNodes) collect(child);
+        }
+        collect(label);
+        const visibleText = leaves.map(node => node.textContent).join('');
+        // Only this complete reported task label has a known Chinese equivalent.
+        if (visibleText.trim() === 'Running run final video composition' && leaves.length) {
+          leaves[0].textContent = '正在运行最终视频合成';
+          for (const leaf of leaves.slice(1)) if (leaf.textContent) leaf.textContent = '';
+          continue;
+        }
+        const first = leaves.find(node => node.textContent.trim());
+        if (!first) continue;
+        const translated = statusText(first.textContent);
+        if (translated !== null && translated !== first.textContent) first.textContent = translated;
+      }
+    }
+    for (const header of document.querySelectorAll('[data-testid="changed-files-card-header"]')) {
+      if (protectedContent(header)) continue;
+      const group = Array.from(header.childNodes).find(node => node.nodeType === Node.ELEMENT_NODE);
+      if (!group || group.tagName !== 'DIV') continue;
+      for (const label of group.childNodes) {
+        if (label.nodeType !== Node.ELEMENT_NODE || label.tagName !== 'SPAN' || !hasClasses(label, ['text-secondary-foreground', 'truncate'])) continue;
+        if (label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
+        const match = label.textContent.trim().match(/^(\\d+) files? changed$/);
+        if (match) label.childNodes[0].textContent = match[1] + ' 个文件已更改';
+      }
+    }
+  }
+
+
+  function translateHiddenSystemUi() {
+    if (typeof document.querySelectorAll !== 'function') return;
+    function classes(element, names) {
+      const list = (element.getAttribute('class') || '').split(/\\s+/);
+      return names.every(name => list.includes(name));
+    }
+    function protectedUi(element, allowPre) {
+      for (let node = element; node; node = node.parentElement) {
+        if ((EXCLUDE_TAGS.has(node.tagName) && !(allowPre && node.tagName === 'PRE')) || node.matches('.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])')) return true;
+        if (['user-message', 'live-user-turn', 'user-message-content'].includes(node.getAttribute('data-testid'))) return true;
+      }
+      return false;
+    }
+    function attributes(element) {
+      for (const name of ['title', 'aria-label']) {
+        const value = element.getAttribute(name);
+        if (!value) continue;
+        const translated = translateText(value);
+        if (translated !== null && translated !== value) element.setAttribute(name, translated);
+      }
+    }
+    function leaves(element, result) {
+      if (element.nodeType === Node.TEXT_NODE) { result.push(element); return; }
+      if (element.nodeType !== Node.ELEMENT_NODE || protectedUi(element) || isPluginNameElement(element) || element.tagName === 'SVG' || element.hasAttribute('data-slot-out') || element.getAttribute('aria-hidden') === 'true') return;
+      for (const child of element.childNodes) leaves(child, result);
+    }
+    function fixedLeaves(element) {
+      if (protectedUi(element) || isPluginNameElement(element)) return;
+      attributes(element);
+      for (const child of element.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          const key = child.textContent.replace(/\\s+/g, ' ').trim();
+          const translated = normalizedDict[key];
+          if (translated && translated !== child.textContent) child.textContent = translated;
+        } else if (child.nodeType === Node.ELEMENT_NODE && child.tagName !== 'SVG') fixedLeaves(child);
+      }
+    }
+    function combined(element, dynamic) {
+      const nodes = [];
+      leaves(element, nodes);
+      const text = nodes.map(node => node.textContent).join('').replace(/\\s+/g, ' ').trim();
+      const prefixLabels = {Running:'正在运行',Ran:'已运行',Reading:'正在读取',Read:'已读取',Editing:'正在编辑',Edited:'已编辑',Listing:'正在列出',Listed:'已列出',Searching:'正在搜索',Searched:'已搜索',Thinking:'正在思考'};
+      const translated = dynamic ? prefixLabels[text] || translateText(text) : normalizedDict[text];
+      if (!translated || translated === text || !nodes.length) return;
+      if (nodes[0].textContent !== translated) nodes[0].textContent = translated;
+      for (const node of nodes.slice(1)) if (node.textContent) node.textContent = '';
+    }
+    const fixedRoots = ['code-block-preview-toggle', 'code-block-preview-button', 'code-block-raw-button', 'cos-canvas-label', 'computer-permissions-card', 'computer-permissions-relaunch', 'computer-permissions-continue', 'ask-question-collapse-button', 'ask-question-dismiss-button', 'cleared-step-notice'];
+    for (const root of document.querySelectorAll(fixedRoots.map(id => '[data-testid="' + id + '"]').join(', '))) fixedLeaves(root);
+    for (const root of document.querySelectorAll('[data-testid="browser-subagent-steps"], [data-testid="browser-subagent-step"]')) if (!protectedUi(root)) attributes(root);
+    for (const root of document.querySelectorAll('[data-testid="mcp-app-view-error"]')) {
+      if (protectedUi(root)) continue;
+      const first = Array.from(root.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+      if (first && first.textContent.trim() === 'Could not load the app view:') first.textContent = '无法加载应用视图：';
+    }
+    for (const header of document.querySelectorAll('.group.min-h-8.select-none')) {
+      if (protectedUi(header) || !classes(header, ['flex', 'w-full', 'min-w-0', 'items-center', 'py-1', 'px-2'])) continue;
+      const group = Array.from(header.childNodes).find(node => node.nodeType === Node.ELEMENT_NODE && classes(node, ['flex', 'min-w-0', 'items-center', 'gap-x-1']));
+      if (!group) continue;
+      let prefixFound = false;
+      for (const row of group.querySelectorAll('div')) {
+        if (!classes(row, ['flex', 'flex-row', 'items-center', 'gap-1', 'overflow-hidden', 'whitespace-nowrap', 'text-muted-foreground'])) continue;
+        const prefix = Array.from(row.childNodes).find(node => node.nodeType === Node.ELEMENT_NODE && node.tagName === 'SPAN' && node.getAttribute('class') === 'text-muted-foreground' && !node.hasAttribute('title'));
+        if (!prefix) continue;
+        prefixFound = true;
+        combined(prefix, true);
+      }
+    }
+    for (const label of document.querySelectorAll('.h-8.text-muted-foreground.select-none')) {
+      if (!protectedUi(label) && classes(label, ['px-2', 'flex', 'items-center'])) {
+        for (const child of label.childNodes) if (child.nodeType === Node.TEXT_NODE && child.textContent.trim() === 'Waiting for user input') child.textContent = '等待用户输入';
+      }
+    }
+    for (const label of document.querySelectorAll('h5, h6')) {
+      const parent = label.parentElement;
+      if (!parent || !classes(label, ['sr-only']) || !label.hasAttribute('data-find-ignore')) continue;
+      const id = parent.getAttribute('data-testid');
+      const allowed = (id === 'user-message' && label.tagName === 'H5' && label.textContent === 'You said') || (id === 'agent-response' && label.tagName === 'H6' && ['Agent working', 'Agent said'].includes(label.textContent));
+      if (allowed && label.childNodes.length === 1 && label.childNodes[0].nodeType === Node.TEXT_NODE) {
+        const translated = normalizedDict[label.textContent];
+        if (translated && translated !== label.textContent) label.childNodes[0].textContent = translated;
+      }
+    }
+    for (const error of document.querySelectorAll('p.text-red-500.text-sm.pl-1')) {
+      if (protectedUi(error)) continue;
+      let form = error.parentElement;
+      while (form && form.tagName !== 'FORM') form = form.parentElement;
+      if (form && classes(form, ['flex', 'flex-col', 'gap-1'])) combined(error, true);
+    }
+    for (const root of document.querySelectorAll('[data-testid="model-selector-trigger"]')) {
+      if (protectedUi(root)) continue;
+      let aggregate = false;
+      for (const label of root.querySelectorAll('span')) {
+        if (!label.hasAttribute('data-tooltip-id') || label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
+        const count = label.textContent.match(/^(\\d+) models selected$/);
+        if (count) { aggregate = true; label.childNodes[0].textContent = '已选择 ' + count[1] + ' 个模型'; }
+        else if (/^已选择 \\d+ 个模型$/.test(label.textContent)) aggregate = true;
+      }
+      const aria = root.getAttribute('aria-label');
+      if (aggregate && aria && /^(Select model, current:|选择模型，当前：)/.test(aria)) {
+        const translated = aria.replace(/(\\d+) models selected/, '已选择 $1 个模型');
+        if (translated !== aria) root.setAttribute('aria-label', translated);
+      }
+    }
+    for (const pre of document.querySelectorAll('pre')) {
+      if (protectedUi(pre, true) || !classes(pre, ['overflow-auto']) && !classes(pre, ['overflow-y-auto'])) continue;
+      const wrapper = Array.from(pre.childNodes).find(node => node.nodeType === Node.ELEMENT_NODE && node.tagName === 'DIV');
+      const label = wrapper && wrapper.childNodes[0];
+      if (!label || label.nodeType !== Node.ELEMENT_NODE || label.tagName !== 'DIV' || !classes(label, ['text-muted-foreground']) || label.childNodes.length < 4 || Array.from(label.childNodes).some(node => node.nodeType !== Node.TEXT_NODE)) continue;
+      const match = label.textContent.match(/^(?:…\\s*\\()?([0-9]+) lines? above hidden\\)?$/);
+      if (match) {
+        label.childNodes[0].textContent = '…（上方已隐藏 ' + match[1] + ' 行）';
+        for (const node of Array.from(label.childNodes).slice(1)) if (node.textContent) node.textContent = '';
+      }
+    }
+  }
+
+
   function formatUiDate(value) {
     const months = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
     return value.replace(/\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),\\s+(\\d{4})\\b/g, (original, month, day, year) => Number(day) >= 1 && Number(day) <= 31 ? year + ' 年 ' + months[month] + ' 月 ' + Number(day) + ' 日' : original);
   }
 
-  function translateText(text) {
+  function translateTextInternal(text) {
     if (!text) return null;
     const normalizedText = text.replace(/\\s+/g, ' ').trim();
     if (!normalizedText) return null;
+    const membershipText = translateMembershipText(normalizedText);
+    if (membershipText !== null) return membershipText;
     
     const effortNames = {low:'低',medium:'中',high:'高',xhigh:'极高',extra:'极高',max:'最高',thinking:'思考'};
     const modelEffortSuffix = normalizedText.match(/^((?:Gemini|Claude|GPT|Sonnet|Opus)[^()]*?)\\s*\\((low|medium|high|xhigh|max|extra|thinking)(?:\\s+thinking)?\\)$/i);
@@ -684,9 +951,9 @@ function buildInjectScript(dict) {
       return planAvailability[1] + ' 目前向' + (planAvailability[2] === 'paid Pro and Ultra' ? '' : ' ') + plans[planAvailability[2]] + '开放。';
     }
     const quotaResetNotice = normalizedText.match(/^Your quota for (.+?) will reset on (.+)\\. Switch to another available model to continue\\.$/);
-    if (quotaResetNotice) return quotaResetNotice[1] + ' 的配额将于 ' + formatUiDate(quotaResetNotice[2]) + '重置。请切换到其他可用模型以继续。';
+    if (quotaResetNotice) return (quotaResetNotice[1] === 'this model' ? '此模型' : quotaResetNotice[1] + ' ') + '的配额将于 ' + formatUiDate(quotaResetNotice[2]) + '重置。请切换到其他可用模型以继续。';
     const quotaReachedNotice = normalizedText.match(/^Your quota for (.+?) has been reached\\. Switch to another available model to continue\\.$/);
-    if (quotaReachedNotice) return quotaReachedNotice[1] + ' 的配额已用尽。请切换到其他可用模型以继续。';
+    if (quotaReachedNotice) return (quotaReachedNotice[1] === 'this model' ? '此模型' : quotaReachedNotice[1] + ' ') + '的配额已用尽。请切换到其他可用模型以继续。';
     const baselineResetNotice = normalizedText.match(/^Your plan's baseline quota will refresh on (.+)\\.$/);
     if (baselineResetNotice) return '你的方案基础配额将于 ' + formatUiDate(baselineResetNotice[1]) + '刷新。';
     const quotaPermissionText = translateQuotaPermissionText(normalizedText);
@@ -832,13 +1099,6 @@ function buildInjectScript(dict) {
       return \`更新于 \${updatedMatch[1]}\`;
     }
 
-    // 23. Dynamic Regex translation for relative time (e.g. "5m ago", "2h ago")
-    const agoMatch = normalizedText.match(/^(\\d+)\\s*(s|m|h|d|mo|y)\\s+ago$/i);
-    if (agoMatch) {
-      const unitMap = { s: '秒', m: '分钟', h: '小时', d: '天', mo: '个月', y: '年' };
-      return \`\${agoMatch[1]} \${unitMap[agoMatch[2].toLowerCase()] || agoMatch[2]}前\`;
-    }
-
     // 24. Dynamic Regex translation for tab close tooltip: "Close <Tab Title>"
     const closeTabMatch = normalizedText.match(/^Close\\s+(.+)$/i);
     if (closeTabMatch && closeTabMatch[1].length > 3) {
@@ -913,7 +1173,19 @@ function buildInjectScript(dict) {
     if (availableCreditsMatch) return '可用 AI 积分：' + availableCreditsMatch[1];
     const inheritedPermissionsMatch = normalizedText.match(/^Inherits your Global Permissions when working (in this project|in these conversations)\\.$/);
     if (inheritedPermissionsMatch) return '在' + (inheritedPermissionsMatch[1] === 'in this project' ? '此项目' : '这些会话') + '中工作时，沿用你的全局权限。';
+    const hiddenUiText = translateHiddenUiTemplate(normalizedText);
+    if (hiddenUiText !== null) return hiddenUiText;
     return null;
+  }
+
+  const localizedUiResults = new Set();
+  function translateText(text) {
+    if (!text) return null;
+    const normalized = text.replace(/\\s+/g, ' ').trim();
+    if (localizedUiResults.has(normalized)) return null;
+    const translated = translateTextInternal(text);
+    if (translated !== null && translated !== text) localizedUiResults.add(translated.replace(/\\s+/g, ' ').trim());
+    return translated;
   }
 
   function translateNode(node) {
@@ -993,7 +1265,9 @@ function buildInjectScript(dict) {
           }
         }
       }
-      translatePermissionCards();
+      translateHiddenSystemUi();
+    translateRuntimeUiLabels();
+    translatePermissionCards();
     });
 
     observer.observe(document.body, {
@@ -1006,6 +1280,8 @@ function buildInjectScript(dict) {
 
     // Initial translation
     translateNode(document.body);
+    translateHiddenSystemUi();
+    translateRuntimeUiLabels();
     translatePermissionCards();
   }
 
@@ -1040,8 +1316,6 @@ function buildInjectScript(dict) {
 // ==================== END OF ANTIGRAVITY CHINESE LOCALIZATION PATCH ====================
 `;
 }
-
-
 
 module.exports = { patch, revert, buildInjectScript, SUPPORTED_VERSION };
 if (require.main === module) {
