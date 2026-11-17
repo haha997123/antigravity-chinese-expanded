@@ -557,8 +557,64 @@ function buildInjectScript(dict) {
     }
   }
 
+  function translateProjectDeleteDescription(element) {
+    if (element.tagName !== 'SPAN' || isInExcludedZone(element)) return false;
+    function hasClasses(node, names) {
+      const classes = node && node.getAttribute && (node.getAttribute('class') || '').split(/\\s+/);
+      return classes && names.every(name => classes.includes(name));
+    }
+    // The settings row has a dedicated delete-project button beside its description.
+    // Match its shipped structure rather than translating "including" globally.
+    const description = element.parentElement;
+    const column = description && description.parentElement;
+    const row = column && column.parentElement;
+    if (!description || description.tagName !== 'SPAN' || !hasClasses(description, ['text-sm', 'text-muted-foreground', 'whitespace-pre-wrap']) ||
+        !column || column.tagName !== 'DIV' || !hasClasses(column, ['flex-1', 'flex', 'flex-col', 'gap-0.5']) ||
+        !row || row.tagName !== 'DIV' || !hasClasses(row, ['w-full', 'bg-transparent', 'flex', 'justify-between', 'gap-4'])) return false;
+    const hasDeleteButton = Array.from(row.childNodes).some(container => container.tagName === 'DIV' && hasClasses(container, ['shrink-0']) &&
+      Array.from(container.childNodes).some(button => button.tagName === 'BUTTON' && button.getAttribute('data-testid') === 'delete-project-button'));
+    if (!hasDeleteButton) return false;
+    const nodes = Array.from(element.childNodes);
+    const strongs = nodes.filter(node => node.tagName === 'STRONG');
+    if (strongs.length < 1 || strongs.length > 2 || nodes.some(node => node.nodeType !== Node.TEXT_NODE && node.tagName !== 'STRONG')) return false;
+    const name = strongs[0];
+    const first = nodes.indexOf(name);
+    const last = nodes.indexOf(strongs[strongs.length - 1]);
+    const prefix = nodes.slice(0, first);
+    const suffix = nodes.slice(last + 1);
+    const textOf = list => list.map(node => node.textContent).join('');
+    if (!/^(?:Permanently delete|永久删除)$/.test(textOf(prefix).trim()) || !/^[.。]$/.test(textOf(suffix).trim())) return false;
+    const including = nodes.slice(first + 1, last);
+    if (strongs.length === 2 && !/^(?:including|，?包括)$/.test(textOf(including).trim())) return false;
+    if (!prefix.length || !suffix.length || (strongs.length === 2 && !including.length)) return false;
+    preservedAutomationNames.add(name); // Project names are data, even if named Settings or including.
+    function writeFragments(fragments, value) {
+      fragments.forEach((node, index) => {
+        const next = index === 0 ? value : '';
+        if (node.textContent !== next) node.textContent = next;
+      });
+    }
+    writeFragments(prefix, '永久删除 ');
+    writeFragments(suffix, '。');
+    if (strongs.length === 2) {
+      writeFragments(including, '，包括 ');
+      const count = strongs[1];
+      if (count.childNodes.length === 1 && count.childNodes[0].nodeType === Node.TEXT_NODE) {
+        // MRb creates these exact active/archived count forms; keep numeric values and STRONG nodes.
+        const counts = count.textContent.match(/^(\\d+) (active|archived) conversations?(?: and (\\d+) (active|archived) conversations?)?$/);
+        if (counts) {
+          const label = (number, kind) => number + (kind === 'active' ? ' 个进行中的对话' : ' 个已归档的对话');
+          const next = label(counts[1], counts[2]) + (counts[3] ? '和 ' + label(counts[3], counts[4]) : '');
+          if (count.childNodes[0].textContent !== next) count.childNodes[0].textContent = next;
+        }
+      }
+    }
+    return true;
+  }
+
   function translateComposedDescription(element) {
     if (isInExcludedZone(element)) return;
+    if (translateProjectDeleteDescription(element)) return;
     if (element.tagName === 'P' && hasAncestorTestId(element, 'sidecar-list-empty')) {
       const emptyText = element.textContent.replace(/\\s+/g, ' ').trim();
       if (/^(?:No|否)\\s*automations\\s+yet$/i.test(emptyText)) {
@@ -626,13 +682,14 @@ function buildInjectScript(dict) {
   function translateQuotaPermissionText(text) {
     const group = text.match(/^Models within this group:\\s*(.+)$/);
     if (group) return '此组内的模型：' + group[1];
-    const reset = text.match(/^You have used some of your weekly limit, it will fully refresh in (.+)\\.$/);
+    const reset = text.match(/^You have used some of your (weekly|(\\d+(?:\\.\\d+)?)-hour) limit, it will fully refresh in (.+)\\.$/);
     if (reset) {
       const units = {week:'周', day:'天', hour:'小时', minute:'分钟', second:'秒'};
       const expression = /(\\d+(?:\\.\\d+)?)\\s+(week|day|hour|minute|second)s?\\b/gi;
-      const parts = Array.from(reset[1].matchAll(expression));
-      const remainder = reset[1].replace(expression, '').replace(/\\band\\b|[,\\s]/gi, '');
-      if (parts.length && !remainder) return '你已使用部分每周配额，将在 ' + parts.map(part => part[1] + ' ' + units[part[2].toLowerCase()]).join('，') + '后全部恢复。';
+      const parts = Array.from(reset[3].matchAll(expression));
+      const remainder = reset[3].replace(expression, '').replace(/\\band\\b|[,\\s]/gi, '');
+      const quota = reset[1] === 'weekly' ? '每周配额' : ' ' + reset[2] + ' 小时配额';
+      if (parts.length && !remainder) return '你已使用部分' + quota + '，将在 ' + parts.map(part => part[1] + ' ' + units[part[2].toLowerCase()]).join('，') + '后全部恢复。';
     }
     const listFiles = text.match(/^(Allow|Save rule to always allow) list files in (.+)\\?$/);
     if (listFiles) return (listFiles[1] === 'Allow' ? '允许列出 ' : '保存规则以始终允许列出 ') + listFiles[2] + ' 中的文件吗？';
