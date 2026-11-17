@@ -686,6 +686,22 @@ function buildInjectScript(dict) {
 
 
   function translateMembershipText(text) {
+    const combinedLimits = text.match(/^Within each group, models share a weekly limit and a (\\d+(?:\\.\\d+)?)-hour limit\\. Quota is consumed proportionally to the cost of the tokens\\. Thus, limits will last longer with shorter tasks or using more cost-effective models\\. The \\1-hour limit (?:is to smooth out aggregate demand and to fairly distribute|smooths out aggregate demand to fairly distribute) global capacity across all users, while your weekly limit is tied directly to your individual tier\\.$/);
+    if (combinedLimits) return '每组内的模型共享每周限额和 ' + combinedLimits[1] + ' 小时限额。配额按 Token 成本比例消耗，因此较短的任务或成本更低的模型可让配额使用更久。' + combinedLimits[1] + ' 小时限额用于平衡整体需求，并向所有用户公平分配全球服务容量；每周限额则直接取决于你个人的方案等级。';
+    const modelIntroduction = text.match(/^Introducing (Gemini \\d+(?:\\.\\d+)? [A-Za-z][A-Za-z0-9 -]*)$/);
+    if (modelIntroduction) return '全新推出 ' + modelIntroduction[1];
+    const namedQuota = text.match(/^(Gemini \\d+(?:\\.\\d+)? (?:Argon|Carbon|Hydrogen|Flash(?: Lite)?|Pro)) (Weekly|Daily|Five [Hh]our|\\d+(?:\\.\\d+)?[ -]hour) Limit$/);
+    if (namedQuota) {
+      const window = namedQuota[2];
+      const quota = window === 'Weekly' ? '每周限额' : window === 'Daily' ? '每日限额' : /^Five /i.test(window) ? '5 小时限额' : window.replace(/[ -]hour$/, '') + ' 小时限额';
+      return namedQuota[1] + ' ' + quota;
+    }
+    const separateQuota = text.match(/^For paid Pro plans, (Argon|Carbon|Hydrogen) quota is separate\\. Higher \\1 quota \\(included as part of the larger Gemini quota bucket\\) is available on Ultra plans\\.$/);
+    if (separateQuota) return '付费 Pro 方案的 ' + separateQuota[1] + ' 配额单独计算。Ultra 方案提供更高的 ' + separateQuota[1] + ' 配额，并将其包含在更大的 Gemini 配额池中。';
+    const orchestrator = text.match(/^(Argon|Carbon|Hydrogen) that may offload routine steps to (Argon|Carbon|Hydrogen|Flash)\\. Same \\1-level quality, fewer tokens used\\.$/);
+    if (orchestrator) return orchestrator[1] + ' 可将常规步骤交给 ' + orchestrator[2] + '，在保持 ' + orchestrator[1] + ' 级别质量的同时，减少 Token 用量。';
+    const locationLabel = text.match(/^Where the agent runs, current: (.+)$/);
+    if (locationLabel) return '智能体运行位置，当前：' + (locationLabel[1] === 'This Computer' ? '本机' : locationLabel[1] === 'Remote' ? '远程环境' : locationLabel[1]);
     const credits = text.match(/^You need (more|at least (\\d+(?:\\.\\d+)?)) AI Credits to send messages\\. To continue using (.+?) now, purchase more AI Credits\\.(?: Your plan's baseline quota will refresh on (.+)\\.)?$/);
     if (credits) {
       const model = credits[3] === 'this model' ? '此模型' : credits[3];
@@ -894,6 +910,16 @@ function buildInjectScript(dict) {
       let form = error.parentElement;
       while (form && form.tagName !== 'FORM') form = form.parentElement;
       if (form && classes(form, ['flex', 'flex-col', 'gap-1'])) combined(error, true);
+    }
+    const modelRows = new Set(document.querySelectorAll('[data-testid="model-selector-item"], [data-testid="model-selector-custom-item"]'));
+    for (const group of document.querySelectorAll('[data-testid="model-selector-effort-group"]')) if (group.parentElement) modelRows.add(group.parentElement);
+    for (const row of modelRows) {
+      if (protectedUi(row)) continue;
+      for (const badge of row.querySelectorAll('.bg-secondary.rounded-full.text-sm')) {
+        if (!classes(badge, ['px-1.5'])) continue;
+        const label = badge.childNodes.length === 1 && badge.childNodes[0].nodeType === Node.TEXT_NODE ? badge : Array.from(badge.childNodes).find(node => node.nodeType === Node.ELEMENT_NODE && node.tagName === 'SPAN' && node.childNodes.length === 1 && node.childNodes[0].nodeType === Node.TEXT_NODE);
+        if (label && ['New', 'NEW', '新建'].includes(label.textContent.trim())) label.childNodes[0].textContent = '新增';
+      }
     }
     for (const root of document.querySelectorAll('[data-testid="model-selector-trigger"]')) {
       if (protectedUi(root)) continue;

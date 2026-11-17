@@ -90,6 +90,24 @@ function scenario(hostname) {
     'Allow search for Codex References 2.0 (local)/中文目录?':'允许搜索 Codex References 2.0 (local)/中文目录 吗？'
   });
   const hiddenFixtures={
+    'For paid Pro plans, Argon quota is separate. Higher Argon quota (included as part of the larger Gemini quota bucket) is available on Ultra plans.':'付费 Pro 方案的 Argon 配额单独计算。Ultra 方案提供更高的 Argon 配额，并将其包含在更大的 Gemini 配额池中。',
+    'For paid Pro plans, Carbon quota is separate. Higher Carbon quota (included as part of the larger Gemini quota bucket) is available on Ultra plans.':'付费 Pro 方案的 Carbon 配额单独计算。Ultra 方案提供更高的 Carbon 配额，并将其包含在更大的 Gemini 配额池中。',
+    'Argon that may offload routine steps to Hydrogen. Same Argon-level quality, fewer tokens used.':'Argon 可将常规步骤交给 Hydrogen，在保持 Argon 级别质量的同时，减少 Token 用量。',
+    'Where the agent runs, current: This Computer':'智能体运行位置，当前：本机',
+    'Where the agent runs, current: Remote':'智能体运行位置，当前：远程环境',
+    'Where the agent runs, current: Example_Host':'智能体运行位置，当前：Example_Host',
+    'Within each group, models share a weekly limit and a 5-hour limit. Quota is consumed proportionally to the cost of the tokens. Thus, limits will last longer with shorter tasks or using more cost-effective models. The 5-hour limit is to smooth out aggregate demand and to fairly distribute global capacity across all users, while your weekly limit is tied directly to your individual tier.':'每组内的模型共享每周限额和 5 小时限额。配额按 Token 成本比例消耗，因此较短的任务或成本更低的模型可让配额使用更久。5 小时限额用于平衡整体需求，并向所有用户公平分配全球服务容量；每周限额则直接取决于你个人的方案等级。',
+    'Within each group, models share a weekly limit and a 12-hour limit. Quota is consumed proportionally to the cost of the tokens. Thus, limits will last longer with shorter tasks or using more cost-effective models. The 12-hour limit is to smooth out aggregate demand and to fairly distribute global capacity across all users, while your weekly limit is tied directly to your individual tier.':'每组内的模型共享每周限额和 12 小时限额。配额按 Token 成本比例消耗，因此较短的任务或成本更低的模型可让配额使用更久。12 小时限额用于平衡整体需求，并向所有用户公平分配全球服务容量；每周限额则直接取决于你个人的方案等级。',
+    'Introducing Gemini 4 Hydrogen':'全新推出 Gemini 4 Hydrogen',
+    'Introducing Gemini 4.5 Carbon':'全新推出 Gemini 4.5 Carbon',
+    'Our daily driver for rapid coding and dependable agentic execution!':'快速编程、可靠执行智能体任务的日常主力模型！',
+    'Introducing ExamplePlugin':'Introducing ExamplePlugin',
+    'Gemini 4 Argon Weekly Limit':'Gemini 4 Argon 每周限额',
+    'Gemini 4.5 Carbon Daily Limit':'Gemini 4.5 Carbon 每日限额',
+    'Gemini 4 Hydrogen Five Hour Limit':'Gemini 4 Hydrogen 5 小时限额',
+    'Gemini 5.1 Carbon 12-hour Limit':'Gemini 5.1 Carbon 12 小时限额',
+    'ExamplePlugin Weekly Limit':'ExamplePlugin Weekly Limit',
+    'gemini-4-argon-weekly-limit':'gemini-4-argon-weekly-limit',
     'Open URL in system browser: https://example.com/a?x=1':'在系统浏览器中打开网址：https://example.com/a?x=1',
     'Configure Example Server, values missing':'配置 Example Server，尚有值未填写',
     'View image attachment 2':'查看第 2 个图片附件',
@@ -111,6 +129,15 @@ function scenario(hostname) {
     'Maximum value is 2.5':'最大值为 2.5',
     'Input must match ^[A-Z]{2}\\d+$':'输入必须匹配 ^[A-Z]{2}\\d+$'
   };
+  const combinedLimitFixture=Object.keys(hiddenFixtures).find(text=>text.startsWith('Within each group, models share a weekly limit and a 5-hour limit.'));
+  const updatedLimit=combinedLimitFixture.replace('is to smooth out aggregate demand and to fairly distribute','smooths out aggregate demand to fairly distribute');
+  hiddenFixtures[updatedLimit]=hiddenFixtures[combinedLimitFixture];
+  const updatedTwelve=updatedLimit.replaceAll('5-hour','12-hour');
+  hiddenFixtures[updatedTwelve]=hiddenFixtures[combinedLimitFixture].replaceAll('5 小时','12 小时');
+  const mismatchedLimit=combinedLimitFixture.replace('The 5-hour limit','The 6-hour limit');
+  hiddenFixtures[mismatchedLimit]=mismatchedLimit;
+  const prefixedLimit='Additional note: '+combinedLimitFixture;
+  hiddenFixtures[prefixedLimit]=prefixedLimit;
   Object.assign(noticeFixtures,hiddenFixtures);
   Object.assign(noticeFixtures,JSON.parse("{\"Loading media...\": \"正在加载媒体…\", \"No compatible devices found.\": \"未找到兼容的设备。\", \"Project Required\": \"需要项目\", \"License Required\": \"需要许可证\", \"Loading runs…\": \"正在加载运行记录…\", \"No runs yet\": \"暂无运行记录\", \"No pinned conversations\": \"没有置顶会话\", \"The remote workspace is not running\": \"远程工作区未运行\", \"This field is required\": \"此项为必填项\"}"));
   const noticeTextNodes=Object.keys(noticeFixtures).map(text=>new TextNode(text));
@@ -210,6 +237,14 @@ function scenario(hostname) {
   const multiModelText=new TextNode('3 models selected');
   const multiModelButton=new Element('button',[new Element('span',[multiModelText],{'data-tooltip-id':'model-count-tooltip'})],{'data-testid':'model-selector-trigger','aria-label':'Select model, current: 3 models selected','data-context-window':'default'});
   const customModelName=new TextNode('3 models selected');
+  const newBadgeText=new TextNode('New');
+  const upperBadgeText=new TextNode('NEW');
+  const groupedBadgeText=new TextNode('New');
+  const newModelName=new TextNode('Orchestrator (Argon)');
+  const newModelRow=new Element('div',[new Element('span',[newModelName],{class:'truncate text-sm text-left'}),new Element('div',[new Element('span',[newBadgeText]),new Element('span',[])],{class:'bg-secondary opacity-70 flex items-center gap-1 rounded-full px-1.5 text-sm'}),new Element('div',[upperBadgeText],{class:'bg-secondary rounded-full px-1.5 text-sm'})],{'data-testid':'model-selector-item','data-model-label':'Orchestrator (Argon)'});
+  const groupedModelRow=new Element('div',[new Element('span',[new TextNode('Gemini 4 Hydrogen')],{'data-testid':'model-selector-effort-group','data-model-base':'Gemini 4 Hydrogen'}),new Element('div',[groupedBadgeText],{class:'bg-secondary rounded-full px-1.5 text-sm'})]);
+  const createNewText=new TextNode('New');
+  const newBadgeFixture=new Element('div',[newModelRow,groupedModelRow,new Element('button',[createNewText])]);
   const customModelButton=new Element('button',[new Element('span',[customModelName])],{'data-testid':'model-selector-trigger','aria-label':'Select model, current: 3 models selected'});
   const rawToolName=new TextNode('Open Terminal');
   const noPrefixTitle=new Element('span',[rawToolName],{class:'truncate text-muted-foreground [&_.text-foreground]:text-muted-foreground',title:'Open Terminal'});
@@ -220,7 +255,7 @@ function scenario(hostname) {
   const hiddenLineMarker=new Element('div',hiddenLineNodes,{class:'text-muted-foreground'});
   const hiddenTerminal=new Element('pre',[new Element('div',[hiddenLineMarker,rawTerminalText])],{class:'max-h-[300px] overflow-auto whitespace-pre-wrap break-words px-3 py-2 font-mono text-sm'});
   const hiddenAgentUi=new Element('div',[mcpUiError,hiddenToolbar,hiddenToolHeader,noPrefixHeader,toolWaitLabel,new Element('pre',[toolCodeText]),form,multiModelButton,customModelButton,hiddenTerminal,new Element('p',[hiddenBodyText])],{'data-testid':'agent-response'});
-  const hiddenTestFixture=new Element('div',[hiddenAgentUi,new Element('div',[hiddenUserText],{'data-testid':'user-message'})]);
+  const hiddenTestFixture=new Element('div',[hiddenAgentUi,newBadgeFixture,new Element('div',[hiddenUserText],{'data-testid':'user-message'})]);
   const body=new Element('body',[runtimeUiFixture,hiddenTestFixture,settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,quotaEmpty,modelNotice,modelUnavailable,viewPlans,noticeFixturesContainer,quotaDetail,quotaPercent,splitQuotaPercent,availableCredits,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,standalonePermissionAppHeader,permissionAgentWrapper,protectedUserWrapper,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),new Element('div',[userSearchText],{'data-testid':'user-message'}),new Element('div',[agentSearchText],{'data-testid':'agent-response'}),input]);
   const observers=[];
   class Observer {constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){}}
@@ -357,6 +392,12 @@ function scenario(hostname) {
     assert.equal(multiModelButton.getAttribute('data-context-window'),'default');
     assert.equal(customModelName.textContent,'3 models selected');
     assert.equal(rawToolName.textContent,'Open Terminal');
+    assert.equal(newBadgeText.textContent,'新增');
+    assert.equal(upperBadgeText.textContent,'新增');
+    assert.equal(groupedBadgeText.textContent,'新增');
+    assert.equal(createNewText.textContent,dictionary.New);
+    assert.equal(newModelName.textContent,'Orchestrator (Argon)');
+    assert.equal(newModelRow.getAttribute('data-model-label'),'Orchestrator (Argon)');
     assert.equal(noPrefixTitle.getAttribute('title'),'Open Terminal');
     assert.equal(hiddenLineMarker.textContent,'…（上方已隐藏 12 行）');
     assert.equal(rawTerminalText.textContent,'12 lines above hidden');
