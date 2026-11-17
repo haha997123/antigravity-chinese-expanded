@@ -4367,5 +4367,6 @@
   "⚠️ Failed to render Mermaid diagram:": "⚠️ Mermaid 图表渲染失败：",
   "The remote shared a link for this push.": "远程端为此次推送提供了一个链接。",
   "This field is required": "此项为必填项",
-  "docs": "文档"
+  "docs": "文档",
+  "The selected project can't be found. Pick another project from the project selector to send.": "找不到所选项目。请从项目选择器中选择其他项目后再发送。"
 }

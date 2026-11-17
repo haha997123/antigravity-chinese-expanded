@@ -415,6 +415,72 @@ try {
     ipcContent = ipcContent.replace(/message:\s*'Folder is on the Windows filesystem'/g, "message: '文件夹位于 Windows 文件系统中'");
     // 2.31.2 新增：下载目录选择对话框
     ipcContent = ipcContent.replace(/title:\s*'Select Download Folder'/g, "title: '选择下载文件夹'");
+    // Native notifications: match the supported 2.32.1 handler exactly. Dynamic
+    // questions, commands, URLs, summaries and remote host names stay intact.
+    const notificationChannel = "electron_1.ipcMain.handle('notification:send'";
+    if (ipcContent.includes('notification:send')) {
+      const notificationAnchor = [
+        "    electron_1.ipcMain.handle('notification:send', (event, options) => {",
+        "        // Named by their host: an SSH window can't pose as the app.",
+        "        const remote = (0, remoteWindowSecurity_1.isRemoteContents)(event?.sender);",
+        "        const label = (0, windowBackends_1.remoteBackendOf)(event?.sender)?.label ?? 'SSH';",
+        '        const remoteTitle = truncate(options?.title, MAX_NOTIFICATION_TITLE);',
+        '        const notification = new electron_1.Notification({',
+        '            title: remote',
+        '                ? truncate(remoteTitle ? `${label}: ${remoteTitle}` : label, MAX_NOTIFICATION_TITLE)',
+        '                : options.title,',
+        '            body: remote',
+        '                ? truncate(options?.body, MAX_NOTIFICATION_BODY)',
+        '                : options.body,',
+        '            silent: options?.silent ?? false,',
+        '        });',
+      ].join('\n');
+      if (ipcContent.split(notificationChannel).length !== 2 || ipcContent.split(notificationAnchor).length !== 2) {
+        throw new Error('系统通知处理器与受支持的 Antigravity 2.32.1 不匹配，已停止修改。');
+      }
+      const notificationHelper = [
+        '        const _localizedNotification = (() => {',
+        '            const title = options?.title;',
+        '            const body = options?.body;',
+        '            if (options?.payload?.type !== "request_action") return { title, body };',
+        '            const titles = {',
+        '                "Requesting your permission in Terminal:": "请求您授权终端操作：",',
+        '                "Requesting your permission to open URL:": "请求您授权打开网址：",',
+        '                "The agent has questions for you:": "智能体有一些问题需要您回答：",',
+        '                "The agent has a question for you:": "智能体有一个问题需要您回答：",',
+        '                "Requesting your permission:": "请求您的授权：",',
+        '                "Action requires your attention": "有操作需要您处理",',
+        '            };',
+        '            const translatedTitle = Object.prototype.hasOwnProperty.call(titles, title) ? titles[title] : title;',
+        '            let translatedBody = body;',
+        '            if (typeof body === "string") {',
+        '                if (title === "Antigravity" || title === "Jetski") {',
+        '                    if (body === "Agent finished") translatedBody = "智能体已完成";',
+        '                    else if (body.startsWith("Agent finished: ")) translatedBody = "智能体已完成：" + body.slice("Agent finished: ".length);',
+        '                } else if (title === "Requesting your permission in Terminal:" && body.startsWith("Command: ")) {',
+        '                    translatedBody = "命令：" + body.slice("Command: ".length);',
+        '                } else if (title === "Requesting your permission to open URL:" && body.startsWith("URL: ")) {',
+        '                    translatedBody = "URL：" + body.slice("URL: ".length);',
+        '                } else if (title === "Action requires your attention" && body === "The agent is waiting for your input.") {',
+        '                    translatedBody = "智能体正在等待您的输入。";',
+        '                }',
+        '            }',
+        '            return { title: translatedTitle, body: translatedBody };',
+        '        })();',
+        '',
+      ].join('\n');
+      const replaceNotificationOnce = (source, before, after) => {
+        if (source.split(before).length !== 2) throw new Error('系统通知汉化替换校验失败，已停止修改。');
+        return source.replace(before, () => after);
+      };
+      let localizedNotification = replaceNotificationOnce(notificationAnchor,
+        '        const remoteTitle = truncate(options?.title, MAX_NOTIFICATION_TITLE);',
+        notificationHelper + '        const remoteTitle = truncate(_localizedNotification.title, MAX_NOTIFICATION_TITLE);');
+      localizedNotification = replaceNotificationOnce(localizedNotification, ': options.title,', ': _localizedNotification.title,');
+      localizedNotification = replaceNotificationOnce(localizedNotification, 'truncate(options?.body, MAX_NOTIFICATION_BODY)', 'truncate(_localizedNotification.body, MAX_NOTIFICATION_BODY)');
+      localizedNotification = replaceNotificationOnce(localizedNotification, ': options.body,', ': _localizedNotification.body,');
+      ipcContent = replaceNotificationOnce(ipcContent, notificationAnchor, localizedNotification);
+    }
     fs.writeFileSync(ipcPath, ipcContent, 'utf8');
   }
 
@@ -744,6 +810,16 @@ function buildInjectScript(dict) {
       }
       return false;
     }
+    function isProtectedTimestampContent(node, userActions = false) {
+      for (let element = node; element; element = element.parentElement) {
+        if (EXCLUDE_TAGS.has(element.tagName) || element.matches('.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])')) return true;
+        const testId = element.getAttribute && element.getAttribute('data-testid');
+        if (['user-message-content', 'commentable-content', 'live-user-turn', 'live-agent-turn'].includes(testId)) return true;
+        if (testId === 'user-message' && !userActions) return true;
+        if (testId === 'agent-response' && userActions) return true;
+      }
+      return false;
+    }
     function timeText(text) {
       const source = text.trim();
       if (/^(?:just\\s*now|now)$/i.test(source)) return '刚刚';
@@ -752,15 +828,25 @@ function buildInjectScript(dict) {
       const units = {s:'秒', m:'分钟', h:'小时', d:'天', w:'周', mo:'个月', y:'年'};
       return relative[1] + ' ' + units[relative[2].toLowerCase()] + '前';
     }
+    for (const actions of document.querySelectorAll('[data-testid="user-message-actions"]')) {
+      if (actions.tagName !== 'DIV' || isProtectedTimestampContent(actions, true)) continue;
+      // The timestamp is a direct child of the real user action bar. Do not
+      // inspect button text, tooltip content, or arbitrary message descendants.
+      for (const label of actions.childNodes) {
+        if (label.tagName !== 'SPAN' || !label.hasAttribute('data-screenshot-volatile')) continue;
+        if (label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
+        const translated = timeText(label.textContent);
+        if (translated !== null && translated !== label.textContent) label.childNodes[0].textContent = translated;
+      }
+    }
     for (const label of document.querySelectorAll('span[data-screenshot-volatile]')) {
-      if (label.tagName !== 'SPAN' || protectedContent(label)) continue;
+      if (label.tagName !== 'SPAN' || isProtectedTimestampContent(label)) continue;
       const sidebar = hasClasses(label, ['text-sm', 'text-foreground', 'opacity-60', 'min-w-4', 'shrink-0', 'text-right', 'tabular-nums']) &&
         ['conversation-row-sidebar', 'conversation-row-history'].some(id => hasAncestorTestId(label, id));
       const toolbar = hasClasses(label, ['text-sm', 'text-muted-foreground', 'select-none', 'px-1', 'whitespace-nowrap']) && hasAncestorTestId(label, 'cascade-system-message-toolbar');
-      const userActions = hasClasses(label, ['text-sm', 'text-muted-foreground', 'select-none', 'px-1', 'mr-1', 'self-center', 'whitespace-nowrap']) && label.parentElement && label.parentElement.getAttribute('data-testid') === 'user-message-actions' && label.parentElement.hasAttribute('data-no-scroll-jump') && hasAncestorTestId(label, 'user-input-step');
       const parent = label.parentElement;
       const step = hasClasses(label, ['text-xs', 'text-muted-foreground', 'cursor-default', 'px-1', 'whitespace-nowrap']) && parent && hasClasses(parent, ['flex', 'items-center', 'select-none', 'text-xs']);
-      if (!sidebar && !toolbar && !step && !userActions) continue;
+      if (!sidebar && !toolbar && !step) continue;
       if (label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
       const translated = timeText(label.textContent);
       if (translated !== null && translated !== label.textContent) label.childNodes[0].textContent = translated;
@@ -1318,26 +1404,52 @@ function buildInjectScript(dict) {
     observeDOM();
   }
 
-  // Translate document title
-  const originalTitle = document.title;
-  const translatedTitle = translateText(originalTitle);
-  if (translatedTitle !== null) {
-    document.title = translatedTitle;
+  const extraTitleMap = {
+    'Agent Manager': '智能体管理器',
+    'Inbox': '收件箱',
+    'New Conversation': '新建会话',
+    'New Chat': '新建对话',
+    'Settings': '设置',
+    'Customizations': '自定义配置',
+    'Browser': '浏览器',
+    'Terminal': '终端',
+    'Changes': '更改'
+  };
+
+  function translateDocumentTitle(title) {
+    if (!title || typeof title !== 'string') return null;
+    const source = title.trim();
+    if (Object.hasOwn(extraTitleMap, source)) return title.replace(source, extraTitleMap[source]);
+    // Only fixed app page titles are UI. Conversation/project/terminal titles
+    // can contain commands or user text and must not use the general dictionary.
+    const page = source.match(/^(Agent Manager|Inbox|New Conversation|New Chat|Settings|Customizations|Browser|Terminal|Changes)(\\s+[-—|]\\s+Antigravity)$/);
+    if (page) return title.replace(source, extraTitleMap[page[1]] + page[2]);
+    return null;
   }
-  
-  // Observe title changes
-  const titleObserver = new MutationObserver(() => {
+
+  function applyTitleTranslation() {
     const title = document.title;
-    const translated = translateText(title);
+    const translated = translateDocumentTitle(title);
     if (translated !== null && title !== translated) {
       document.title = translated;
     }
-  });
-  
-  const titleEl = document.querySelector('title');
-  if (titleEl) {
-    titleObserver.observe(titleEl, { childList: true, characterData: true });
   }
+
+  applyTitleTranslation();
+
+  let titleObservationRoot = null;
+  function observeTitleRoot() {
+    const root = document.head || document.documentElement;
+    if (!root || root === titleObservationRoot) return;
+    titleObserver.disconnect();
+    titleObservationRoot = root;
+    titleObserver.observe(root, { childList: true, characterData: true, subtree: true });
+  }
+  const titleObserver = new MutationObserver(() => {
+    applyTitleTranslation();
+    observeTitleRoot();
+  });
+  observeTitleRoot();
 })();
 // ==================== END OF ANTIGRAVITY CHINESE LOCALIZATION PATCH ====================
 `;

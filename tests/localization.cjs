@@ -198,7 +198,8 @@ function scenario(hostname) {
   const userBodyAgo=new TextNode('2h ago');
   const userActionCopy=new Element('button',[],{'data-testid':'copy-message-button','aria-label':'Copy Message','data-action':'copy'});
   const userActions=new Element('div',[new Element('span',[userActionNow],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'}),new Element('span',[userActionAgo],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'}),userActionCopy],{'data-testid':'user-message-actions','data-no-scroll-jump':'true'});
-  const userStep=new Element('div',[new Element('div',[userBodyAgo],{'data-testid':'user-message'}),userActions],{'data-testid':'user-input-step'});
+  // In the shipped renderer, the user-message wrapper contains user-input-step and its action bar.
+  const userStep=new Element('div',[new Element('div',[new Element('div',[userBodyAgo],{'data-testid':'user-message-content'}),userActions],{'data-testid':'user-input-step'})],{'data-testid':'user-message'});
   const unknownTimestamp=new TextNode('just now');
   const userTimestamp=new TextNode('just now');
   const activityText=new TextNode('Running run final video composition');
@@ -332,16 +333,39 @@ function scenario(hostname) {
     observers[0].callback([{type:'childList',target:userActions,addedNodes:[lateUserLabel]}]);
     assert.equal(lateUserTime.textContent,'刚刚');
     for(let conversation=0;conversation<3;conversation++) {
-      const firstMessageTime=new TextNode('just now');
-      const firstMessageLabel=new Element('span',[firstMessageTime],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'});
-      const firstMessageActions=new Element('div',[firstMessageLabel],{'data-testid':'user-message-actions','data-no-scroll-jump':'true'});
-      const firstMessage=new Element('div',[firstMessageActions],{'data-testid':'user-input-step','data-conversation-fixture':String(conversation)});
-      firstMessage.parentElement=body;body.childNodes.push(firstMessage);
-      observers[0].callback([{type:'childList',target:body,addedNodes:[firstMessage]}]);
-      assert.equal(firstMessageTime.textContent,'刚刚','New conversations must translate their first message timestamp');
-      firstMessageTime.textContent='2h ago';
-      observers[0].callback([{type:'characterData',target:firstMessageTime}]);
-      assert.equal(firstMessageTime.textContent,'2 小时前','Timestamps must stay translated as time advances');
+      function messageFixture(source,position) {
+        const time=new TextNode(source);
+        const label=new Element('span',[time],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'});
+        const actions=new Element('div',[label],{'data-testid':'user-message-actions','data-no-scroll-jump':'true'});
+        const prose=new TextNode(source);
+        const content=new Element('div',[new Element('span',[prose],{'data-screenshot-volatile':'true'})],{'data-testid':'user-message-content'});
+        const step=new Element('div',[content,actions],{'data-testid':'user-input-step'});
+        const message=new Element('div',[step],{'data-testid':'user-message','data-conversation-fixture':String(conversation),'data-message-position':position});
+        return {time,label,actions,prose,message};
+      }
+      const first=messageFixture('justnow','first');
+      const last=messageFixture('2h ago','last');
+      const conversationRoot=new Element('div',[first.message,last.message]);
+      conversationRoot.parentElement=body;body.childNodes.push(conversationRoot);
+      observers[0].callback([{type:'childList',target:body,addedNodes:[conversationRoot]}]);
+      assert.equal(first.time.textContent,'刚刚','Every new conversation must translate its first action-bar timestamp');
+      assert.equal(last.time.textContent,'2 小时前','The last user action-bar timestamp must translate too');
+      assert.equal(first.prose.textContent,'justnow','Timestamp-like user prose must remain untouched');
+      assert.equal(last.prose.textContent,'2h ago','Timestamp-like last-message prose must remain untouched');
+      first.time.textContent='2h ago';
+      observers[0].callback([{type:'characterData',target:first.time}]);
+      assert.equal(first.time.textContent,'2 小时前','First-message timestamps must stay translated as time advances');
+      const rerenderedTime=new TextNode('just now');
+      const rerenderedLabel=new Element('span',[rerenderedTime],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'});
+      rerenderedLabel.parentElement=first.actions;first.actions.childNodes=[rerenderedLabel];
+      observers[0].callback([{type:'childList',target:first.actions,addedNodes:[rerenderedLabel]}]);
+      assert.equal(rerenderedTime.textContent,'刚刚','Replacing the first timestamp node must keep localization active');
+      rerenderedTime.textContent='2h ago';
+      observers[0].callback([{type:'characterData',target:rerenderedTime}]);
+      assert.equal(rerenderedTime.textContent,'2 小时前','Replacement timestamp nodes must update after initial rendering');
+      const timestampWrites=rerenderedTime.writes;
+      for(let repeat=0;repeat<5;repeat++) observers[0].callback([{type:'characterData',target:rerenderedTime}]);
+      assert.equal(rerenderedTime.writes,timestampWrites,'Stable translated timestamps must not be rewritten');
     }
     assert.equal(unknownTimestamp.textContent,'just now');
     assert.equal(userTimestamp.textContent,'just now');
@@ -453,6 +477,24 @@ function scenario(hostname) {
     assert.equal(rerenderedName.textContent,'Settings');
     for(let i=0;i<10;i++) observers[0].callback([{type:'characterData',target:identical}]);
     assert.equal(identical.writes,0,'Same-text writes may create an observer loop');
+    // Generated response prose and voice transcripts are not UI timestamps, even when volatile.
+    for(const testId of ['agent-response','live-agent-turn','commentable-content','user-message','user-message-content','live-user-turn']) {
+      const prose=new TextNode('2h ago');
+      const container=new Element('div',[new Element('span',[prose],{'data-screenshot-volatile':'true'})],{'data-testid':testId});
+      container.parentElement=body;body.childNodes.push(container);
+      observers[0].callback([{type:'childList',target:body,addedNodes:[container]}]);
+      assert.equal(prose.textContent,'2h ago',testId+' prose must not be translated by timestamp fallbacks');
+    }
+    // A lookalike action bar inside code, output, or an editor must remain data.
+    for(const [tag,attributes] of [['pre',{}],['code',{}],['div',{class:'monaco-editor'}],['div',{class:'cm-editor'}],['div',{contenteditable:'true'}]]) {
+      const rawTime=new TextNode('2h ago');
+      const fakeLabel=new Element('span',[rawTime],{'data-screenshot-volatile':'true',class:'text-sm text-muted-foreground select-none px-1 mr-1 self-center whitespace-nowrap'});
+      const fakeActions=new Element('div',[fakeLabel],{'data-testid':'user-message-actions','data-no-scroll-jump':'true'});
+      const output=new Element(tag,[fakeActions],attributes);
+      output.parentElement=body;body.childNodes.push(output);
+      observers[0].callback([{type:'childList',target:body,addedNodes:[output]}]);
+      assert.equal(rawTime.textContent,'2h ago','Lookalike action bars inside '+tag+' '+JSON.stringify(attributes)+' must remain untouched');
+    }
     assert.equal(settings.writes,1);
   } else {
     assert.equal(settings.textContent,'Settings');
