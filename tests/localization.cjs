@@ -1,7 +1,9 @@
 'use strict';
 const fs=require('node:fs');
 const path=require('node:path');
+const os=require('node:os');
 const vm=require('node:vm');
+const Module=require('node:module');
 const assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..');
 const dictionary=JSON.parse(fs.readFileSync(path.join(root,'dictionary.json'),'utf8'));
@@ -273,7 +275,11 @@ function scenario(hostname) {
   const body=new Element('body',[runtimeUiFixture,hiddenTestFixture,settings,identical,greeting,alternateGreeting,selector,projectDescription,automationNotice,creationNotice,lateCreationNotice,advancedDescription,feedbackType,customizationsEmpty,quotaEmpty,modelNotice,modelUnavailable,viewPlans,noticeFixturesContainer,quotaDetail,quotaPercent,splitQuotaPercent,availableCredits,feedbackDescription,feedbackIdentity,inheritedTooltip,skillRow,additionalContainer,promptContainer,planPrefix,planName,planCombined,eligibility,pluginCard,emptyContainer,standalonePermissionAppHeader,permissionAgentWrapper,protectedUserWrapper,new Element('div',[userText],{'data-testid':'user-message'}),new Element('div',[agentText],{'data-testid':'agent-response'}),new Element('pre',[codeText]),new Element('div',[userSearchText],{'data-testid':'user-message'}),new Element('div',[agentSearchText],{'data-testid':'agent-response'}),input]);
   const observers=[];
   class Observer {constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){}}
-  vm.runInNewContext(injected,{window:{location:{protocol:'https:',hostname,pathname:'/customizations'}},document:{body,readyState:'complete',title:'Antigravity',querySelector(){return null;},querySelectorAll(selector){return body.querySelectorAll(selector);}},Node:{TEXT_NODE:3,ELEMENT_NODE:1},MutationObserver:Observer,console});
+  const sentContextMenus=[];
+  const origShowContextMenu=(items)=>{sentContextMenus.push(items);return Promise.resolve(null);};
+  const electronNative={showContextMenu:origShowContextMenu};
+  const sandbox={window:{location:{protocol:'https:',hostname,pathname:'/customizations'},electronNative},document:{body,readyState:'complete',title:'Antigravity',querySelector(){return null;},querySelectorAll(selector){return body.querySelectorAll(selector);}},Node:{TEXT_NODE:3,ELEMENT_NODE:1},MutationObserver:Observer,console};
+  vm.runInNewContext(injected,sandbox);
   if(hostname==='127.0.0.1') {
     // Hidden UI branches must translate changing values while preserving names,
     // diagnostics, typed answers and identical words in ordinary message bodies.
@@ -576,11 +582,279 @@ function scenario(hostname) {
       assert.equal(rawTime.textContent,'2h ago','Lookalike action bars inside '+tag+' '+JSON.stringify(attributes)+' must remain untouched');
     }
     assert.equal(settings.writes,1);
+    function deepFreeze(value) {
+      if (value && typeof value === 'object') {
+        Object.freeze(value);
+        for (const child of Object.values(value)) deepFreeze(child);
+      }
+      return value;
+    }
+    assert.equal(typeof sandbox._agTranslateContextMenuItems, 'function', 'Context menu translator must be exposed on globalThis');
+    const conversationMenu = deepFreeze([
+      { id: 'rename', label: 'Rename' },
+      { id: 'pin', label: 'Pin' },
+      { id: 'unpin', label: 'Unpin' },
+      { id: 'mark-read', label: 'Mark Unread' },
+      { id: 'mark-read-done', label: 'Mark Read' },
+      { id: 'move-to-group', type: 'submenu', label: 'Move to Group', items: [
+        { id: 'group-1', label: 'Settings', type: 'checkbox', checked: true },
+        { id: 'group-2', label: 'Pin', type: 'checkbox', checked: false },
+        { type: 'separator' },
+        { id: 'group-new', label: 'New Group' },
+        { id: 'group-remove', label: 'Remove from Group' }
+      ]},
+      { type: 'separator' },
+      { id: 'copy', type: 'submenu', label: 'Copy', items: [
+        { id: 'copy-0', label: 'Conversation Name' },
+        { id: 'copy-1', label: 'Conversation ID' },
+        { id: 'copy-2', label: 'Workspace Name' },
+        { id: 'copy-3', label: 'Worktree Name' },
+        { id: 'copy-4', label: 'Project Name' }
+      ]},
+      { id: 'fork', type: 'submenu', label: 'Fork', items: [
+        { id: 'fork-0', label: 'Fork in Current Workspace' },
+        { id: 'fork-1', label: 'Fork in Shared Workspace' },
+        { id: 'fork-2', label: 'Fork in New Workspace' }
+      ]},
+      { id: 'split', type: 'submenu', label: 'Split', items: [
+        { id: 'split-0', label: 'Split Right' },
+        { id: 'split-1', label: 'Split Down' },
+        { id: 'split-2', label: 'Replace with New' },
+        { id: 'split-3', label: 'Remove from Split' }
+      ]},
+      { id: 'archive', label: 'Archive' },
+      { id: 'delete', label: 'Delete' },
+      { id: 'restore', label: 'Restore' },
+      { id: 'delete-perm', label: 'Delete Permanently' },
+      { id: 'telemetry', type: 'checkbox', label: 'Telemetry' }
+    ]);
+    const otherMenus = deepFreeze([
+      { id: 'sort-label', type: 'label', label: 'Sort By' },
+      { id: 'sort-last_updated', type: 'radio', label: 'Last Updated' },
+      { id: 'sort-last_user_prompt', type: 'radio', label: 'Last Prompt' },
+      { id: 'sort-custom', type: 'radio', label: 'Custom Order' },
+      { id: 'rename-group', label: 'Rename Group' },
+      { id: 'move-up', label: 'Move Up' },
+      { id: 'move-down', label: 'Move Down' },
+      { id: 'delete-group', label: 'Delete Group' },
+      { id: 'copy-proj', label: 'Copy Project Name' },
+      { id: 'copy-ws', label: 'Copy Workspace Name' },
+      { id: 'archive-proj', label: 'Archive Project' },
+      { id: 'unarchive-proj', label: 'Unarchive Project' },
+      { id: 'unarchive-ws', label: 'Unarchive Workspace' },
+      { id: 'delete-ws', label: 'Delete Workspace' },
+      { id: 'open-side', label: 'Side Panel (Default)' },
+      { id: 'open-builtin', label: 'Built-in Browser (Default)' },
+      { id: 'open-external', label: 'External Browser (Default)' },
+      { id: 'open-tab', label: 'New Tab (Default)' },
+      { id: 'copy-msg', label: 'Copy Message' },
+      { id: 'undo-here', label: 'Undo to Here' },
+      { id: 'message-timestamp', type: 'label', label: 'just now' },
+      { id: 'message-timestamp', type: 'label', label: '2h ago' },
+      { id: 'back', label: 'Back' },
+      { id: 'forward', label: 'Forward' },
+      { id: 'reload', label: 'Reload' },
+      { id: 'conn', label: 'Connection info…' }
+    ]);
+    electronNative.showContextMenu(conversationMenu);
+    electronNative.showContextMenu(otherMenus);
+    assert.equal(sentContextMenus.length, 2);
+    const tConvo = sentContextMenus[0];
+    assert.deepEqual(tConvo.slice(0, 5).map(i => [i.id, i.label]), [
+      ['rename', '重命名'], ['pin', '置顶'], ['unpin', '取消置顶'], ['mark-read', '标为未读'], ['mark-read-done', '标为已读']
+    ]);
+    assert.equal(tConvo[5].label, '移动到分组');
+    assert.deepEqual(tConvo[5].items.map(i => i.label ?? i.type), ['Settings', 'Pin', 'separator', '新建分组', '从分组中移除']);
+    assert.equal(tConvo[7].label, '复制');
+    assert.deepEqual(tConvo[7].items.map(i => i.label), ['对话名称', '对话 ID', '工作空间名称', '工作树名称', '项目名称']);
+    assert.equal(tConvo[8].label, '分叉');
+    assert.deepEqual(tConvo[8].items.map(i => i.label), ['在当前工作空间中分叉', '在共享工作空间中分叉', '在新工作空间中分叉']);
+    assert.equal(tConvo[9].label, '拆分');
+    assert.deepEqual(tConvo[9].items.map(i => i.label), ['向右拆分', '向下拆分', '替换为新建', '从分屏中移除']);
+    assert.deepEqual(tConvo.slice(10).map(i => i.label), ['归档', '删除', '还原', '永久删除', '遥测']);
+    assert.equal(conversationMenu[0].label, 'Rename', 'Frozen menu input must stay unchanged');
+    const tOther = sentContextMenus[1];
+    assert.deepEqual(tOther.map(i => [i.id, i.label]), [
+      ['sort-label', '排序方式'], ['sort-last_updated', '最近更新'], ['sort-last_user_prompt', '最近提示'],
+      ['sort-custom', '自定义顺序'], ['rename-group', '重命名分组'], ['move-up', '上移'], ['move-down', '下移'],
+      ['delete-group', '删除分组'], ['copy-proj', '复制项目名称'], ['copy-ws', '复制工作空间名称'],
+      ['archive-proj', '归档项目'], ['unarchive-proj', '取消归档项目'], ['unarchive-ws', '取消归档工作空间'],
+      ['delete-ws', '删除工作空间'], ['open-side', '侧边面板（默认）'], ['open-builtin', '内置浏览器（默认）'],
+      ['open-external', '外部浏览器（默认）'], ['open-tab', '新建标签页（默认）'], ['copy-msg', '复制消息'],
+      ['undo-here', '撤销到此处'], ['message-timestamp', '刚刚'], ['message-timestamp', '2 小时前'],
+      ['back', '返回'], ['forward', '前进'], ['reload', '重新加载'], ['conn', '连接信息…']
+    ]);
+
+    const domCustomGroupText = new TextNode('Settings');
+    const domCustomGroupPinText = new TextNode('Pin');
+    const domNewGroupText = new TextNode('New Group');
+    const domRenameText = new TextNode('Rename');
+    const domMenuTimeText = new TextNode('2h ago');
+    const domForwardText = new TextNode('Forward');
+    const domPopup = new Element('div', [
+      new Element('div', [domRenameText], { 'data-testid': 'conversation-rename-menu-item' }),
+      new Element('div', [domCustomGroupText], { 'data-testid': 'conversation-group-Settings' }),
+      new Element('div', [domCustomGroupPinText], { 'data-testid': 'conversation-group-Pin' }),
+      new Element('div', [domNewGroupText], { 'data-testid': 'conversation-groups-new' }),
+      new Element('div', [domMenuTimeText], { class: 'px-2 py-1 text-sm text-muted-foreground select-none pointer-events-none' }),
+      new Element('div', [new Element('span', [domForwardText], { class: 'truncate' })], { 'data-testid': 'webview-context-menu-forward' })
+    ], { 'data-testid': 'context-menu-popup' });
+    domPopup.parentElement = body; body.childNodes.push(domPopup);
+    observers[0].callback([{ type: 'childList', target: body, addedNodes: [domPopup] }]);
+    assert.equal(domRenameText.textContent, '重命名');
+    assert.equal(domCustomGroupText.textContent, 'Settings');
+    assert.equal(domCustomGroupPinText.textContent, 'Pin');
+    assert.equal(domNewGroupText.textContent, '新建分组');
+    assert.equal(domMenuTimeText.textContent, '2 小时前');
+    assert.equal(domForwardText.textContent, '前进');
+
+    const headerTitleText = new TextNode('Settings');
+    const groupActionsBtn = new Element('button', [], { 'aria-label': 'Group Actions' });
+    const groupHeader = new Element('div', [
+      new Element('h2', [new Element('button', [new Element('span', [headerTitleText])])]),
+      new Element('div', [groupActionsBtn])
+    ], { 'data-testid': 'conversation-group-header' });
+    groupHeader.parentElement = body; body.childNodes.push(groupHeader);
+    observers[0].callback([{ type: 'childList', target: body, addedNodes: [groupHeader] }]);
+    assert.equal(headerTitleText.textContent, 'Settings', 'Custom sidebar group title must stay untouched');
+    assert.equal(groupActionsBtn.getAttribute('aria-label'), '分组操作');
+
+    for (const label of ['Rename', 'Pin', 'Mark Unread', 'Copy', 'Split', 'Archive', 'Delete']) {
+      for (const testId of ['user-message', 'agent-response']) {
+        const msgNode = new TextNode(label), wrapper = new Element('div', [msgNode], { 'data-testid': testId });
+        wrapper.parentElement = body; body.childNodes.push(wrapper);
+        observers[0].callback([{ type: 'childList', target: body, addedNodes: [wrapper] }]);
+        assert.equal(msgNode.textContent, label, 'Menu label inside ' + testId + ' must remain untouched');
+      }
+      for (const tag of ['pre', 'code']) {
+        const codeNode = new TextNode(label), el = new Element(tag, [codeNode]);
+        el.parentElement = body; body.childNodes.push(el);
+        observers[0].callback([{ type: 'childList', target: body, addedNodes: [el] }]);
+        assert.equal(codeNode.textContent, label, 'Menu label inside ' + tag + ' must remain untouched');
+      }
+      const field = new Element('input', [], {}); field.value = label;
+      field.parentElement = body; body.childNodes.push(field);
+      observers[0].callback([{ type: 'childList', target: body, addedNodes: [field] }]);
+      assert.equal(field.value, label, 'Input value must remain untouched');
+    }
   } else {
     assert.equal(settings.textContent,'Settings');
     assert.equal(observers.length,0);
+    assert.equal(electronNative.showContextMenu, origShowContextMenu);
+    assert.equal(sandbox._agTranslateContextMenuItems, undefined);
   }
 }
 scenario('127.0.0.1');
 scenario('example.com');
+
+// Verify transformFiles preload.js showContextMenu wiring and main.js Menu.buildFromTemplate hook.
+(() => {
+  const patchFile = path.join(root, 'patch.js');
+  const patchModule = new Module(patchFile, module);
+  patchModule.filename = patchFile;
+  patchModule.paths = Module._nodeModulePaths(path.dirname(patchFile));
+  patchModule._compile(fs.readFileSync(patchFile, 'utf8') + '\nmodule.exports.transformForTest = transformFiles;\n', patchFile);
+  const transformFiles = patchModule.exports.transformForTest;
+
+  const tempRoot = fs.realpathSync(os.tmpdir());
+  const dir = fs.mkdtempSync(path.join(tempRoot, 'antigravity-menu-test-'));
+  try {
+    const dist = path.join(dir, 'dist');
+    fs.mkdirSync(dist, { recursive: true });
+    const preloadFixture = [
+      "const electron_1 = require('electron');",
+      'const electronNativeAPI = {',
+      "  showContextMenu: (items) => electron_1.ipcRenderer.invoke('window:show-context-menu', items),",
+      '};',
+      'globalThis.__exposed = electronNativeAPI;',
+    ].join('\n');
+    fs.writeFileSync(path.join(dist, 'preload.js'), preloadFixture, 'utf8');
+    fs.writeFileSync(path.join(dist, 'main.js'), "'use strict';\n", 'utf8');
+    transformFiles(dir, dictionary);
+
+    const patchedPreload = fs.readFileSync(path.join(dist, 'preload.js'), 'utf8');
+    const ipcCalls = [];
+    const preloadSandbox = {
+      require: (id) => {
+        assert.equal(id, 'electron');
+        return { ipcRenderer: { invoke: (ch, payload) => ipcCalls.push([ch, payload]) } };
+      },
+      window: { location: { protocol: 'https:', hostname: '127.0.0.1', pathname: '/' } },
+      document: { body: { childNodes: [] }, readyState: 'loading', addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; } },
+      Node: { TEXT_NODE: 3, ELEMENT_NODE: 1 },
+      MutationObserver: class { observe() {} disconnect() {} },
+      console
+    };
+    preloadSandbox.globalThis = preloadSandbox;
+    vm.runInNewContext(patchedPreload, preloadSandbox);
+    preloadSandbox.__exposed.showContextMenu([
+      { id: 'rename', label: 'Rename' },
+      { id: 'move-to-group', type: 'submenu', label: 'Move to Group', items: [
+        { id: 'group-a', label: 'Settings' },
+        { id: 'group-new', label: 'New Group' }
+      ]}
+    ]);
+    assert.equal(ipcCalls.length, 1);
+    assert.equal(ipcCalls[0][0], 'window:show-context-menu');
+    assert.equal(ipcCalls[0][1][0].label, '重命名');
+    assert.equal(ipcCalls[0][1][1].label, '移动到分组');
+    assert.equal(ipcCalls[0][1][1].items[0].label, 'Settings');
+    assert.equal(ipcCalls[0][1][1].items[1].label, '新建分组');
+
+    const badPreloadDir = fs.mkdtempSync(path.join(tempRoot, 'antigravity-bad-preload-'));
+    try {
+      fs.mkdirSync(path.join(badPreloadDir, 'dist'), { recursive: true });
+      fs.writeFileSync(path.join(badPreloadDir, 'dist', 'preload.js'), "electron_1.ipcRenderer.invoke('window:show-context-menu', changed);", 'utf8');
+      assert.throws(() => transformFiles(badPreloadDir, dictionary), /preload\.js 右键菜单接口与受支持版本不匹配/);
+    } finally {
+      fs.rmSync(badPreloadDir, { recursive: true, force: true });
+    }
+
+    const patchedMain = fs.readFileSync(path.join(dist, 'main.js'), 'utf8');
+    const builtMenus = [];
+    const Menu = {
+      buildFromTemplate(template) {
+        const clone = (list) => list.map(it => ({ ...it, submenu: Array.isArray(it.submenu) ? { items: clone(it.submenu) } : undefined }));
+        const m = { items: clone(template) };
+        builtMenus.push(m);
+        return m;
+      },
+      setApplicationMenu() {}
+    };
+    vm.runInNewContext(patchedMain, { require: (id) => id === 'electron' ? { Menu } : {}, console });
+    const rawMainInput = Object.freeze([
+      Object.freeze({ id: 'rename', label: 'Rename' }),
+      Object.freeze({ id: 'forward', label: 'Forward' }),
+      Object.freeze({ id: 'message-timestamp', type: 'label', label: '2h ago' }),
+      Object.freeze({ id: 'conn', label: 'Connection info…' }),
+      Object.freeze({ id: 'move-to-group', type: 'submenu', label: 'Move to Group', submenu: Object.freeze([
+        Object.freeze({ id: 'group-1', label: 'Settings' }),
+        Object.freeze({ id: 'group-new', label: 'New Group' })
+      ])}),
+      Object.freeze({ label: 'Connect to WSL', submenu: Object.freeze([
+        Object.freeze({ label: 'Settings', type: 'checkbox' })
+      ])}),
+      Object.freeze({ id: 'proto-1', label: 'constructor' }),
+      Object.freeze({ id: 'proto-2', label: 'toString' }),
+      Object.freeze({ id: 'proto-3', label: '__proto__' })
+    ]);
+    const mainMenu = Menu.buildFromTemplate(rawMainInput);
+    assert.equal(mainMenu.items[0].label, '重命名');
+    assert.equal(mainMenu.items[1].label, '前进');
+    assert.equal(mainMenu.items[2].label, '2 小时前');
+    assert.equal(mainMenu.items[3].label, '连接信息…');
+    assert.equal(mainMenu.items[4].label, '移动到分组');
+    assert.equal(mainMenu.items[4].submenu.items[0].label, 'Settings');
+    assert.equal(mainMenu.items[4].submenu.items[1].label, '新建分组');
+    assert.equal(mainMenu.items[5].label, '连接到 WSL');
+    assert.equal(mainMenu.items[5].submenu.items[0].label, 'Settings');
+    assert.equal(mainMenu.items[6].label, 'constructor');
+    assert.equal(mainMenu.items[7].label, 'toString');
+    assert.equal(mainMenu.items[8].label, '__proto__');
+  } finally {
+    if (path.dirname(fs.realpathSync(dir)) !== tempRoot || fs.lstatSync(dir).isSymbolicLink()) throw new Error('Test cleanup containment check failed');
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+})();
+
 console.log('UI localization regression checks passed.');

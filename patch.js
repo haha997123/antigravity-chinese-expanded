@@ -227,6 +227,14 @@ function transformFiles(extractedDir, dictionary) {
       preloadContent = stripped;
       console.log('检测到旧版汉化注入代码，已先移除（防止重复堆积）。');
     }
+    const showContextMenuAnchor = "showContextMenu: (items) => electron_1.ipcRenderer.invoke('window:show-context-menu', items),";
+    const showContextMenuReplacement = "showContextMenu: (items) => electron_1.ipcRenderer.invoke('window:show-context-menu', typeof globalThis._agTranslateContextMenuItems === 'function' ? globalThis._agTranslateContextMenuItems(items) : items),";
+    if (preloadContent.includes('window:show-context-menu') && !preloadContent.includes(showContextMenuReplacement)) {
+      if (preloadContent.split(showContextMenuAnchor).length !== 2) {
+        throw new Error('preload.js 右键菜单接口与受支持版本不匹配，已停止修改。');
+      }
+      preloadContent = preloadContent.replace(showContextMenuAnchor, () => showContextMenuReplacement);
+    }
     fs.writeFileSync(preloadPath, preloadContent.replace(/\s+$/, '\n'), 'utf8');
     fs.appendFileSync(preloadPath, '\n\n' + injectCode);
   } else {
@@ -308,55 +316,96 @@ try {
     'help': '帮助', 'about': '关于', 'services': '服务', 'hide': '隐藏', 'hideOthers': '隐藏其他',
     'unhide': '显示全部', 'quit': '退出', 'fileMenu': '文件', 'editMenu': '编辑', 'viewMenu': '视图'
   };
-  const _labelMap = {
+  const _labelMap = Object.assign(Object.create(null), ${JSON.stringify(dictionary)}, {
     'Bring All to Front': '前置全部窗口',
     'New Window': '新建窗口', 'Docs': '文档', 'Check for Updates': '检查更新',
     'Checking for Updates...': '正在检查更新...', 'Downloading Update...': '正在下载更新...', 'Restart to Update': '重启以完成更新',
     'Connect to WSL': '连接到 WSL', 'Reopen Locally': '重新在本地打开', 'Actual Size': '实际大小'
-  };
-  function _translateMenuItem(item) {
-    if (!item) return;
+  });
+  function _normalizeMenuLabel(text) {
+    return typeof text === 'string' ? text.replace(/\\s+/g, ' ').trim() : '';
+  }
+  function _translateMenuTimeText(text) {
+    const source = _normalizeMenuLabel(text);
+    if (/^(?:just\\s*now|now)$/i.test(source)) return '刚刚';
+    const relative = source.match(/^(\\d+)\\s*(mo|s|m|h|d|w|y)(?:\\s+ago)?$/i);
+    if (!relative) return null;
+    const units = { s: '秒', m: '分钟', h: '小时', d: '天', w: '周', mo: '个月', y: '年' };
+    return relative[1] + ' ' + units[relative[2].toLowerCase()] + '前';
+  }
+  function _isPreservedMenuItem(item, parentId, parentLabel) {
+    const id = item && typeof item.id === 'string' ? item.id : '';
+    if ((parentId === 'move-to-group' || id.startsWith('group-')) && id !== 'group-new' && id !== 'group-remove') return true;
+    if (parentLabel === 'Connect to WSL' || parentLabel === '连接到 WSL') return true;
+    return false;
+  }
+  function _translateMenuLabel(item, parentId, parentLabel) {
+    if (!item || typeof item.label !== 'string') return;
+    if (_isPreservedMenuItem(item, parentId, parentLabel)) return;
+    const id = typeof item.id === 'string' ? item.id : '';
+    const normalized = _normalizeMenuLabel(item.label);
+    if (!normalized) return;
+    if (id === 'message-timestamp') {
+      const timeTranslated = _translateMenuTimeText(normalized);
+      if (timeTranslated !== null) { item.label = timeTranslated; return; }
+    }
+    if (id === 'forward' && normalized === 'Forward') { item.label = '前进'; return; }
+    if (Object.prototype.hasOwnProperty.call(_labelMap, normalized)) {
+      item.label = _labelMap[normalized];
+      return;
+    }
+    // Electron 原生菜单中 Zoom 相关无固定 role 时 label 为 Reset Zoom 等
+    if (normalized === 'Reset Zoom') item.label = '重置缩放';
+    else if (normalized === 'Zoom In') item.label = '放大';
+    else if (normalized === 'Zoom Out') item.label = '缩小';
+  }
+  function _applyMenuItemLocalization(item, parentId, parentLabel, onlyRoleIfNoLabel) {
+    if (!item || typeof item !== 'object') return { nextParentId: parentId, nextParentLabel: parentLabel };
+    const originalLabel = item.label;
     if (item.role) {
       const key = String(item.role).toLowerCase();
-      if (_roleLabelMap[key]) item.label = _roleLabelMap[key];
+      if (Object.prototype.hasOwnProperty.call(_roleLabelMap, key) && (!onlyRoleIfNoLabel || !item.label)) {
+        item.label = _roleLabelMap[key];
+      }
+      if (key === 'resetzoom') item.label = '重置缩放';
+      else if (key === 'zoomin') item.label = '放大';
+      else if (key === 'zoomout') item.label = '缩小';
     }
-    if (item.label && _labelMap[item.label]) item.label = _labelMap[item.label];
-    // Electron 原生菜单中 Zoom 相关无固定 role 时 label 为 Reset Zoom 等
-    if (item.label === 'Reset Zoom') item.label = '重置缩放';
-    if (item.label === 'Zoom In') item.label = '放大';
-    if (item.label === 'Zoom Out') item.label = '缩小';
+    _translateMenuLabel(item, parentId, parentLabel);
+    return {
+      nextParentId: (typeof item.id === 'string' && item.id) || parentId,
+      nextParentLabel: originalLabel || item.label || parentLabel
+    };
+  }
+  function _translateMenuItem(item, parentId, parentLabel) {
+    if (!item) return;
+    const { nextParentId, nextParentLabel } = _applyMenuItemLocalization(item, parentId, parentLabel, false);
     if (item.submenu && item.submenu.items) {
-      for (const sub of item.submenu.items) _translateMenuItem(sub);
+      for (const sub of item.submenu.items) _translateMenuItem(sub, nextParentId, nextParentLabel);
     } else if (Array.isArray(item.submenu)) {
-      for (const sub of item.submenu) _translateMenuItem(sub);
+      for (const sub of item.submenu) _translateMenuItem(sub, nextParentId, nextParentLabel);
     }
   }
   function _translateMenu(menu) {
     if (!menu || !menu.items) return;
-    for (const item of menu.items) _translateMenuItem(item);
+    for (const item of menu.items) _translateMenuItem(item, '', '');
   }
   const _origBuildFromTemplate = _electron.Menu.buildFromTemplate;
   _electron.Menu.buildFromTemplate = function(template) {
-    // 先翻译 template 中的 role/label
-    function translateTemplate(items) {
-      if (!Array.isArray(items)) return;
-      for (const it of items) {
-        if (it.role) {
-          const k = String(it.role).toLowerCase();
-          if (_roleLabelMap[k] && !it.label) it.label = _roleLabelMap[k];
-          if (it.role === 'resetZoom' || it.role === 'resetzoom') it.label = '重置缩放';
-          if (it.role === 'zoomIn' || it.role === 'zoomin') it.label = '放大';
-          if (it.role === 'zoomOut' || it.role === 'zoomout') it.label = '缩小';
-        }
-        if (it.label && _labelMap[it.label]) it.label = _labelMap[it.label];
-        if (it.label === 'Reset Zoom') it.label = '重置缩放';
-        if (it.label === 'Zoom In') it.label = '放大';
-        if (it.label === 'Zoom Out') it.label = '缩小';
-        if (it.submenu) translateTemplate(Array.isArray(it.submenu) ? it.submenu : (it.submenu.items || []));
-      }
+    // 先翻译 template 中的 role/label（浅拷贝以避免原地改动传入对象）
+    function translateTemplate(items, parentId, parentLabel) {
+      if (!Array.isArray(items)) return items;
+      return items.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        const it = { ...item };
+        const { nextParentId, nextParentLabel } = _applyMenuItemLocalization(it, parentId, parentLabel, true);
+        if (Array.isArray(it.submenu)) it.submenu = translateTemplate(it.submenu, nextParentId, nextParentLabel);
+        else if (it.submenu && Array.isArray(it.submenu.items)) _translateMenuItem({ submenu: it.submenu }, nextParentId, nextParentLabel);
+        return it;
+      });
     }
-    translateTemplate(template);
-    const menu = _origBuildFromTemplate.call(this, template);
+    const translatedTemplate = translateTemplate(template, '', '');
+    const menu = _origBuildFromTemplate.call(this, translatedTemplate);
     _translateMenu(menu);
     return menu;
   };
@@ -541,6 +590,8 @@ function buildInjectScript(dict) {
   function isPluginNameElement(element) {
     const testId = element.getAttribute && element.getAttribute('data-testid');
     if (['featured-carousel-headline', 'featured-carousel-member-tile', 'plugin-view-title-bar-title', 'custom-view-pane-title', 'permission-app-header'].includes(testId)) return true;
+    if (typeof testId === 'string' && testId.startsWith('conversation-group-') && testId !== 'conversation-group-header') return true;
+    if (element.tagName === 'H2' && element.parentElement && element.parentElement.getAttribute && element.parentElement.getAttribute('data-testid') === 'conversation-group-header') return true;
     if (element.tagName === 'H3' && hasAncestorTestId(element, 'featured-carousel')) return true;
     const classes = (element.getAttribute && element.getAttribute('class') || '').split(/\\s+/);
     if (hasAncestorTestId(element, 'customization-card') && ['font-medium', 'text-foreground', 'truncate'].every(name => classes.includes(name))) return true;
@@ -891,6 +942,15 @@ function buildInjectScript(dict) {
     }
   }
 
+  function formatRelativeUiTime(text) {
+    const source = String(text || '').trim();
+    if (/^(?:just\\s*now|now)$/i.test(source)) return '刚刚';
+    const relative = source.match(/^(\\d+)\\s*(mo|s|m|h|d|w|y)(?:\\s+ago)?$/i);
+    if (!relative) return null;
+    const units = {s:'秒', m:'分钟', h:'小时', d:'天', w:'周', mo:'个月', y:'年'};
+    return relative[1] + ' ' + units[relative[2].toLowerCase()] + '前';
+  }
+
   function translateRuntimeUiLabels() {
     if (typeof document.querySelectorAll !== 'function') return;
     function hasClasses(element, names) {
@@ -914,14 +974,6 @@ function buildInjectScript(dict) {
       }
       return false;
     }
-    function timeText(text) {
-      const source = text.trim();
-      if (/^(?:just\\s*now|now)$/i.test(source)) return '刚刚';
-      const relative = source.match(/^(\\d+)\\s*(mo|s|m|h|d|w|y)(?:\\s+ago)?$/i);
-      if (!relative) return null;
-      const units = {s:'秒', m:'分钟', h:'小时', d:'天', w:'周', mo:'个月', y:'年'};
-      return relative[1] + ' ' + units[relative[2].toLowerCase()] + '前';
-    }
     for (const actions of document.querySelectorAll('[data-testid="user-message-actions"]')) {
       if (actions.tagName !== 'DIV' || isProtectedTimestampContent(actions, true)) continue;
       // The timestamp is a direct child of the real user action bar. Do not
@@ -929,7 +981,7 @@ function buildInjectScript(dict) {
       for (const label of actions.childNodes) {
         if (label.tagName !== 'SPAN' || !label.hasAttribute('data-screenshot-volatile')) continue;
         if (label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
-        const translated = timeText(label.textContent);
+        const translated = formatRelativeUiTime(label.textContent);
         if (translated !== null && translated !== label.textContent) label.childNodes[0].textContent = translated;
       }
     }
@@ -942,8 +994,30 @@ function buildInjectScript(dict) {
       const step = hasClasses(label, ['text-xs', 'text-muted-foreground', 'cursor-default', 'px-1', 'whitespace-nowrap']) && parent && hasClasses(parent, ['flex', 'items-center', 'select-none', 'text-xs']);
       if (!sidebar && !toolbar && !step) continue;
       if (label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
-      const translated = timeText(label.textContent);
+      const translated = formatRelativeUiTime(label.textContent);
       if (translated !== null && translated !== label.textContent) label.childNodes[0].textContent = translated;
+    }
+    for (const popup of document.querySelectorAll('[data-testid="context-menu-popup"]')) {
+      if (protectedContent(popup)) continue;
+      for (const label of popup.querySelectorAll('div')) {
+        if (!hasClasses(label, ['px-2', 'py-1', 'text-sm', 'text-muted-foreground', 'select-none', 'pointer-events-none'])) continue;
+        if (label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
+        const translated = formatRelativeUiTime(label.textContent);
+        if (translated !== null && translated !== label.textContent) label.childNodes[0].textContent = translated;
+      }
+    }
+    for (const forwardItem of document.querySelectorAll('[data-testid="webview-context-menu-forward"]')) {
+      if (protectedContent(forwardItem)) continue;
+      function rewriteForward(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          if (['Forward', '转发'].includes(node.textContent.trim())) node.textContent = '前进';
+          return;
+        }
+        if (node.nodeType === Node.ELEMENT_NODE && !protectedContent(node)) {
+          for (const child of node.childNodes) rewriteForward(child);
+        }
+      }
+      rewriteForward(forwardItem);
     }
     function statusText(text) {
       const fixedStatuses = new Set(['Working', 'Thinking', 'Done', 'Ran command', 'Running command', 'Waiting for your answer', 'Waiting for your approval']);
@@ -1409,6 +1483,45 @@ function buildInjectScript(dict) {
     const translated = translateTextInternal(text);
     if (translated !== null && translated !== text) localizedUiResults.add(translated.replace(/\\s+/g, ' ').trim());
     return translated;
+  }
+
+  function translateContextMenuItems(items, parentId = '') {
+    if (!Array.isArray(items)) return items;
+    return items.map((item) => {
+      if (!item || typeof item !== 'object') return item;
+      const next = { ...item };
+      const id = typeof next.id === 'string' ? next.id : '';
+      const isCustomGroup = (parentId === 'move-to-group' || id.startsWith('group-')) && id !== 'group-new' && id !== 'group-remove';
+      if (typeof next.label === 'string' && !isCustomGroup) {
+        const normalized = next.label.replace(/\\s+/g, ' ').trim();
+        if (id === 'message-timestamp') {
+          const translatedTime = formatRelativeUiTime(normalized);
+          if (translatedTime !== null) next.label = translatedTime;
+          else {
+            const translated = translateText(next.label);
+            if (translated !== null) next.label = translated;
+          }
+        } else if (id === 'forward' && normalized === 'Forward') {
+          next.label = '前进';
+        } else {
+          const translated = translateText(next.label);
+          if (translated !== null) next.label = translated;
+        }
+      }
+      const childParentId = id || parentId;
+      if (Array.isArray(next.submenu)) next.submenu = translateContextMenuItems(next.submenu, childParentId);
+      if (Array.isArray(next.items)) next.items = translateContextMenuItems(next.items, childParentId);
+      return next;
+    });
+  }
+
+  globalThis._agTranslateContextMenuItems = translateContextMenuItems;
+  if (window.electronNative && typeof window.electronNative.showContextMenu === 'function' && !window.electronNative.__agZhContextMenuPatched) {
+    try {
+      const origShowContextMenu = window.electronNative.showContextMenu.bind(window.electronNative);
+      window.electronNative.showContextMenu = (items) => origShowContextMenu(translateContextMenuItems(items));
+      window.electronNative.__agZhContextMenuPatched = true;
+    } catch {}
   }
 
   function translateNode(node) {

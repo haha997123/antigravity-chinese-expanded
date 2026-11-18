@@ -29,10 +29,12 @@
 | Best of N 固定评选问卷 | 产品固定问卷位于 agent 区，通用聊天排除使其漏译 | v1.0.7 在 battle-winner-survey 内只处理九个固定标签/属性；输入答案、代码和一般提问不变 |
 | 智能体设置更新失败提示 | 动态错误被整体作为未知字符串跳过 | v1.0.7 只翻固定前缀，保留诊断内容；不把原始错误当正文翻译 |
 | Agent execution terminated / 地区不支持 / 终端沙盒不可用 | 翻译不能修复账号、网络地区、服务状态或主机能力 | 先诊断实际错误与环境，不用更改权限、模型协议或强翻标识来“修复” |
+| 会话、项目、分组、消息、链接、标签页与内置浏览器右键菜单仍显示英文（如 `Rename`、`Pin`、`Mark Unread`、`Copy`、`Split`、`Archive`、`Delete` 及子菜单） | v1.0.8：客户端 2.32.2 / 2.32.1 桌面端通过前端 `window.electronNative.showContextMenu` 经 IPC `window:show-context-menu` 调用主进程 `dist/ipcHandlers.js` 的 `Menu.buildFromTemplate` 弹出原生菜单，不经过页面 DOM `MutationObserver`，且 `dist/main.js` 的 `ANTIGRAVITY_MENU_I18N_PATCH` 原先仅含 10 项窗口菜单词条；同时 `Move to Group`、`Copy`、`Fork`、`Split`、`Sort By`、项目及链接子菜单存在遗漏词条。在 `dictionary.json` 新增 18 项固定词条（总计 4,415 条），在 `patch.js` 中对 `dist/preload.js` 的 `showContextMenu` 注入 `_agTranslateContextMenuItems`、扩展 `dist/main.js` 的 `ANTIGRAVITY_MENU_I18N_PATCH` 全量词典与递归子菜单拦截、处理 `message-timestamp` 相对时间与内置浏览器 `id: 'forward'` -> `'前进'`，并保护 `Move to Group` 用户自定义分组名、`conversation-group-header` 分组标题与 WSL 发行版名 | localization：已通过原生 `showContextMenu`、DOM `context-menu-popup`、自定义分组保留、消息/代码/输入框防误翻及 `transformFiles` 对 `preload.js`/`main.js` 注入与 `Menu.buildFromTemplate` 的全部回归测试，以及真实 2.32.2 原版 `app.asar.bak` 隔离构建/还原验证；实机视觉界面尚待退出 Antigravity 并重装 v1.0.8 后复核 |
 
 ## 验证边界与剩余限制
 
 - 2.32.2 本机主页、设置和模型配额页的中文已观察；MCP 错误、凭据到期及评选等无法自然触发的分支依据当前打包资源及模拟 DOM 检查。
+- v1.0.8 右键菜单汉化与 `.cmd` Node 自动探测已完成全套 `npm test` 回归（含 `localization.cjs` 新增用例）及真实 2.32.2 原版 `app.asar.bak`（SHA-256 `056ba838faf9b75c1382a6a0ae003c4b051a3c3e50060a9e5b34987313492d77`）与 `app.asar.unpacked` 的隔离构建（SHA-256 `ce42372c1f1e98607d25b438606cf200c64202d9975b6ec7cea0033be7d2c532`）、模块语法与精确还原校验；因在 Antigravity 客户端内工作时运行中的客户端进程锁定 `app.asar`（`--no-kill` 下 `rename` 返回 `EPERM`）且不可在宿主内强杀进程，需在退出 Antigravity 后运行 `install.cmd` 完成本机覆盖并重启核对实际显示。
 - 固定完成通知通过真实处理器的转换夹具验证；重新安装前已经生成的系统通知不会追溯改变。不要为演示通知擅自创建或执行用户任务。
 - 普通翻译不联网追译所有未知文本。服务端新公告、新插件介绍、新模型和新句式仍可能需要补丁更新；不得承诺今后没有遗漏。
 - 自动中文标题通过内部接口实现，版本升级可能失效。关闭开关不回滚已经保存的中文标题；历史英文标题不会自动批量重命名。
