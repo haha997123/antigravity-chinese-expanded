@@ -275,6 +275,58 @@ function scenario(hostname) {
   class Observer {constructor(callback){this.callback=callback;observers.push(this);}observe(){}disconnect(){}}
   vm.runInNewContext(injected,{window:{location:{protocol:'https:',hostname,pathname:'/customizations'}},document:{body,readyState:'complete',title:'Antigravity',querySelector(){return null;},querySelectorAll(selector){return body.querySelectorAll(selector);}},Node:{TEXT_NODE:3,ELEMENT_NODE:1},MutationObserver:Observer,console});
   if(hostname==='127.0.0.1') {
+    // Hidden UI branches must translate changing values while preserving names,
+    // diagnostics, typed answers and identical words in ordinary message bodies.
+    const branchCases = [
+      ['Sort Projects', '排序项目'],
+      ['Configuration parameters are required before this server can be started', '此服务器需要先配置参数才能启动。'],
+      ['2 MCP servers failed to start', '2 个 MCP 服务器启动失败'],
+      ['19 MCP servers failed to start', '19 个 MCP 服务器启动失败'],
+      ['MCP server Example MCP requires authentication', 'MCP 服务器 Example MCP 需要身份验证'],
+      ['MCP server Example MCP requires authentication: sign in to "Account / 2" in the Accounts section of plugin "Example Plugin"', 'MCP 服务器 Example MCP 需要身份验证：请在插件“Example Plugin”的“账号”部分登录“Account / 2”'],
+      ['Credentials expire in 2h 3m. Refresh credentials to keep this automation running', '凭据将在 2 小时 3 分钟后到期。请刷新凭据以保持此自动化任务运行。'],
+      ['Credentials expire in 4s. Refresh credentials to keep this automation running', '凭据将在 4 秒后到期。请刷新凭据以保持此自动化任务运行。'],
+      ['Credentials expire in next Tuesday. Refresh credentials to keep this automation running', 'Credentials expire in next Tuesday. Refresh credentials to keep this automation running'],
+      ['No apps found for "Example Search".', '未找到与“Example Search”匹配的应用。'],
+      ['Error updating agent: EACCES /private/path $1', '更新智能体时出错：EACCES /private/path $1'],
+    ];
+    for (const [source, expected] of branchCases) {
+      const label = new TextNode(source), node = new Element('div', [label]);
+      node.parentElement = body; body.childNodes.push(node);
+      observers[0].callback([{type:'childList', target:body, addedNodes:[node]}]);
+      assert.equal(label.textContent, expected, 'Hidden UI: '+source);
+      for (const testId of ['user-message', 'agent-response', 'live-agent-turn']) {
+        const raw = new TextNode(source), guard = new Element('div', [raw], {'data-testid':testId});
+        guard.parentElement=body; body.childNodes.push(guard);
+        observers[0].callback([{type:'childList', target:body, addedNodes:[guard]}]);
+        assert.equal(raw.textContent, source, 'UI-looking message stays data: '+testId);
+      }
+    }
+    const surveyText=new TextNode('Why did you choose this response?');
+    const surveyOption=new TextNode('Better solution & code');
+    const surveyAnswer=new TextNode('Faster response');
+    const surveyInput=new Element('textarea',[surveyAnswer],{placeholder:'Something else (optional)'});
+    surveyInput.value='Better instruction following';
+    const surveyCode=new TextNode('More thorough research');
+    const survey=new Element('div',[surveyText,new Element('span',[surveyOption]),surveyInput,new Element('pre',[surveyCode])],{'data-testid':'battle-winner-survey'});
+    const surveyAgent=new Element('div',[survey],{'data-testid':'agent-response'});
+    surveyAgent.parentElement=body;body.childNodes.push(surveyAgent);
+    observers[0].callback([{type:'childList',target:body,addedNodes:[surveyAgent]}]);
+    assert.equal(surveyText.textContent,'你为什么选择这份回复？');
+    assert.equal(surveyOption.textContent,'方案和代码更好');
+    assert.equal(surveyInput.getAttribute('placeholder'),'其他原因（可选）');
+    assert.equal(surveyInput.value,'Better instruction following');
+    assert.equal(surveyAnswer.textContent,'Faster response');
+    assert.equal(surveyCode.textContent,'More thorough research');
+    surveyOption.textContent='Faster response';
+    observers[0].callback([{type:'characterData',target:surveyOption}]);
+    assert.equal(surveyOption.textContent,'回复更快');
+    const userSurveyText=new TextNode('Why did you choose this response?');
+    const userSurvey=new Element('div',[userSurveyText],{'data-testid':'battle-winner-survey'});
+    const userGuard=new Element('div',[userSurvey],{'data-testid':'user-message'});
+    userGuard.parentElement=body;body.childNodes.push(userGuard);
+    observers[0].callback([{type:'childList',target:body,addedNodes:[userGuard]}]);
+    assert.equal(userSurveyText.textContent,'Why did you choose this response?');
     assert.equal(settings.textContent,'设置');
     assert.equal(userText.textContent,'Settings');
     assert.equal(agentText.textContent,'Run');

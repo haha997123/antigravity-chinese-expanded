@@ -8,11 +8,12 @@ const vm = require('node:vm');
 const { spawn, spawnSync } = require('node:child_process');
 
 const SUPPORTED_VERSION = '2.32.1';
+const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2'];
 const PATCH_MARKER = 'ANTIGRAVITY CHINESE LOCALIZATION PATCH';
 const EXPECTED_MODULES = ['preload', 'main', 'menu', 'tray', 'updater', 'provisionSplash', 'ipcHandlers'];
 
 function requireWindows() {
-  if (process.platform !== 'win32') throw new Error('本补丁仅支持 Windows Antigravity 2.32.1。');
+  if (process.platform !== 'win32') throw new Error('本补丁仅支持 Windows Antigravity 2.32.1 / 2.32.2。');
 }
 
 function loadAsar() {
@@ -43,7 +44,7 @@ function readVersion(asar, archive) {
 function validateArchive(asar, archive) {
   if (!fs.existsSync(archive)) throw new Error(`找不到文件：${archive}`);
   const version = readVersion(asar, archive);
-  if (version !== SUPPORTED_VERSION) throw new Error(`不支持 Antigravity ${version || '未知版本'}；本补丁仅验证了 ${SUPPORTED_VERSION}。`);
+  if (!SUPPORTED_VERSIONS.includes(version)) throw new Error(`不支持 Antigravity ${version || '未知版本'}；本补丁仅验证了 ${SUPPORTED_VERSIONS.join(' / ')}。`);
   for (const module of EXPECTED_MODULES) {
     try { asar.statFile(archive, path.join('dist', module + '.js')); }
     catch { throw new Error(`客户端结构不匹配：缺少 dist/${module}.js，未修改安装文件。`); }
@@ -259,6 +260,15 @@ function transformFiles(extractedDir, dictionary) {
     mainContent = mainContent.replace(/showErrorBox\('WSL setup failed'/g, "showErrorBox('WSL 设置失败'");
     mainContent = mainContent.replace(/showErrorBox\('Startup failed'/g, "showErrorBox('启动失败'");
     
+    const titleStartAnchor = '    const url = `${constants_1.WINDOW_ORIGIN}:${handle.port}/`;';
+    if (mainContent.includes(titleStartAnchor)) {
+      if (mainContent.split(titleStartAnchor).length !== 2) throw new Error('自动中文标题启动位置不唯一，已停止。');
+      const { startChineseTitleWorker } = require('./features/chinese-title-worker.js');
+      const { bootstrapChineseTitles } = require('./features/chinese-title-service.js');
+      const titleBootstrap = '\nfunction _agZhTitleBootstrap(options) {\n' + startChineseTitleWorker.toString() + '\n' + bootstrapChineseTitles.toString() + '\nreturn bootstrapChineseTitles({...options,startWorker:startChineseTitleWorker});\n}\n';
+      const titleCall = '    try { _agZhTitleBootstrap({ app: electron_1.app, getPort: () => (0, languageServer_1.getLsPort)() || handle.port, csrf }); } catch { console.error("[chinese-title] initialization failed"); }\n';
+      mainContent = mainContent.replace(titleStartAnchor, () => titleCall + titleStartAnchor) + titleBootstrap;
+    }
     fs.writeFileSync(mainPath, mainContent, 'utf8');
   }
 
@@ -456,7 +466,7 @@ try {
         '            if (typeof body === "string") {',
         '                if (title === "Antigravity" || title === "Jetski") {',
         '                    if (body === "Agent finished") translatedBody = "智能体已完成";',
-        '                    else if (body.startsWith("Agent finished: ")) translatedBody = "智能体已完成：" + body.slice("Agent finished: ".length);',
+        '                    else if (body.startsWith("Agent finished: ")) translatedBody = "智能体已完成任务，点击查看结果。";',
         '                } else if (title === "Requesting your permission in Terminal:" && body.startsWith("Command: ")) {',
         '                    translatedBody = "命令：" + body.slice("Command: ".length);',
         '                } else if (title === "Requesting your permission to open URL:" && body.startsWith("URL: ")) {',
@@ -853,6 +863,33 @@ function buildInjectScript(dict) {
     return null;
   }
 
+
+  function translateComparisonSurvey() {
+    if (typeof document.querySelectorAll !== 'function') return;
+    const labels = new Set(['Why did you choose this response?', 'Pick at most 2 reasons', 'Something else (optional)', 'Better instruction following', 'Better solution & code', 'More thorough research', 'The other model hallucinated', 'Clearer writing & artifacts', 'Faster response']);
+    for (const survey of document.querySelectorAll('[data-testid="battle-winner-survey"]')) {
+      let unsafe = false;
+      for (let parent = survey; parent; parent = parent.parentElement) {
+        if (EXCLUDE_TAGS.has(parent.tagName) || parent.matches('.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])') || ['user-message', 'live-user-turn'].includes(parent.getAttribute('data-testid'))) { unsafe = true; break; }
+      }
+      if (unsafe) continue;
+      function visit(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const source = node.textContent.trim();
+          if (labels.has(source) && normalizedDict[source]) node.textContent = node.textContent.replace(source, normalizedDict[source]);
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        for (const name of ['placeholder', 'title', 'aria-label']) {
+          const source = node.getAttribute(name);
+          if (labels.has(source) && normalizedDict[source]) node.setAttribute(name, normalizedDict[source]);
+        }
+        if (EXCLUDE_TAGS.has(node.tagName) || node.tagName === 'INPUT' || node.matches('.monaco-editor, .cm-editor, [contenteditable]:not([contenteditable="false"])')) return;
+        for (const child of node.childNodes) visit(child);
+      }
+      visit(survey);
+    }
+  }
 
   function translateRuntimeUiLabels() {
     if (typeof document.querySelectorAll !== 'function') return;
@@ -1307,6 +1344,23 @@ function buildInjectScript(dict) {
       return \`\${nLimitMatch[1]} \${unitMap[nLimitMatch[2].toLowerCase()] || nLimitMatch[2]}限额\`;
     }
 
+    const failedServers = normalizedText.match(/^(\\d+) MCP servers? failed to start$/);
+    if (failedServers) return failedServers[1] + ' 个 MCP 服务器启动失败';
+    const authPlugin = normalizedText.match(/^MCP server (.+) requires authentication: sign in to "(.+)" in the Accounts section of plugin "(.+)"$/);
+    if (authPlugin) return 'MCP 服务器 ' + authPlugin[1] + ' 需要身份验证：请在插件“' + authPlugin[3] + '”的“账号”部分登录“' + authPlugin[2] + '”';
+    const authServer = normalizedText.match(/^MCP server (.+) requires authentication$/);
+    if (authServer) return 'MCP 服务器 ' + authServer[1] + ' 需要身份验证';
+    const credentialExpiry = normalizedText.match(/^Credentials expire in ((?:\\d+(?:\\.\\d+)?[dhms]\\s*)+)\\. Refresh credentials to keep this automation running$/);
+    if (credentialExpiry) {
+      const units = {d:'天',h:'小时',m:'分钟',s:'秒'};
+      const duration = credentialExpiry[1].trim().replace(/(\\d+(?:\\.\\d+)?)([dhms])/g, (_, value, unit) => value + ' ' + units[unit]);
+      return '凭据将在 ' + duration + '后到期。请刷新凭据以保持此自动化任务运行。';
+    }
+    const noApps = normalizedText.match(/^No apps found for "(.+)"\\.$/);
+    if (noApps) return '未找到与“' + noApps[1] + '”匹配的应用。';
+    const agentUpdateError = normalizedText.match(/^Error updating agent: (.+)$/);
+    if (agentUpdateError) return '更新智能体时出错：' + agentUpdateError[1];
+
     const welcomeMatch = normalizedText.match(/^Welcome back,\\s*(.+?)\\.\\s*Where should we pick up\\?$/i);
     if (welcomeMatch) return '欢迎回来，' + welcomeMatch[1] + '。我们从哪里继续？';
     const greetingMatch = normalizedText.match(/^Hey\\s+(.+?),\\s*what should we build today\\?$/i);
@@ -1434,6 +1488,7 @@ function buildInjectScript(dict) {
           }
         }
       }
+      translateComparisonSurvey();
       translateHiddenSystemUi();
     translateRuntimeUiLabels();
     translatePermissionCards();
@@ -1449,6 +1504,7 @@ function buildInjectScript(dict) {
 
     // Initial translation
     translateNode(document.body);
+    translateComparisonSurvey();
     translateHiddenSystemUi();
     translateRuntimeUiLabels();
     translatePermissionCards();
@@ -1512,11 +1568,11 @@ function buildInjectScript(dict) {
 `;
 }
 
-module.exports = { patch, revert, buildInjectScript, SUPPORTED_VERSION };
+module.exports = { patch, revert, buildInjectScript, SUPPORTED_VERSION, SUPPORTED_VERSIONS };
 if (require.main === module) {
   const args = process.argv.slice(2);
   const invalid = args.filter(argument => !['--revert', '--no-kill', '--help', '-h'].includes(argument));
   if (invalid.length) { console.error('未知参数：' + invalid.join(' ')); process.exitCode = 1; }
-  else if (args.includes('--help') || args.includes('-h')) console.log('node patch.js [--revert] [--no-kill]\n仅支持 Windows Antigravity 2.32.1。请先保存工作。');
+  else if (args.includes('--help') || args.includes('-h')) console.log('node patch.js [--revert] [--no-kill]\n支持 Windows Antigravity 2.32.1 / 2.32.2。请先保存工作。');
   else (args.includes('--revert') ? revert : patch)({ noKill: args.includes('--no-kill') }).catch(error => { console.error('操作失败：' + error.message); process.exitCode = 1; });
 }

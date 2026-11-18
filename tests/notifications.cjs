@@ -114,7 +114,8 @@ try {
   new vm.Script(source);
   const local = receiver(source);
   const summary = 'Deploy **Swarm**; constructor\nAgent finished: nested $1';
-  assert.equal(local.post('Antigravity', 'Agent finished: ' + summary).options.body, '智能体已完成：' + summary);
+  assert.equal(local.post('Antigravity', 'Agent finished: ' + summary).options.body, '智能体已完成任务，点击查看结果。');
+  assert.equal(local.post('Antigravity', 'Agent finished: 中文摘要').options.body, '智能体已完成任务，点击查看结果。');
   assert.equal(local.post('Antigravity', 'Agent finished').options.body, '智能体已完成');
   assert.equal(local.post('Jetski', 'Agent finished').options.body, '智能体已完成');
   assert.equal(local.post('Custom application', 'Agent finished: literal').options.body, 'Agent finished: literal');
@@ -158,7 +159,7 @@ try {
   const remote = receiver(source, true, host);
   const remoteNotification = remote.post('Antigravity', 'Agent finished: ' + 's'.repeat(300));
   assert.equal(remoteNotification.options.title, (host + ': Antigravity').slice(0, 80));
-  assert.equal(remoteNotification.options.body, ('智能体已完成：' + 's'.repeat(300)).slice(0, 200));
+  assert.equal(remoteNotification.options.body, '智能体已完成任务，点击查看结果。');
   remoteNotification.callbacks.click();
   assert.equal(remote.state.localLookups, 0);
   assert.equal(remote.state.remoteLookups, 1);
