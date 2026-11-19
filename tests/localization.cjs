@@ -95,6 +95,7 @@ function scenario(hostname) {
     'For paid Pro plans, Argon quota is separate. Higher Argon quota (included as part of the larger Gemini quota bucket) is available on Ultra plans.':'付费 Pro 方案的 Argon 配额单独计算。Ultra 方案提供更高的 Argon 配额，并将其包含在更大的 Gemini 配额池中。',
     'For paid Pro plans, Carbon quota is separate. Higher Carbon quota (included as part of the larger Gemini quota bucket) is available on Ultra plans.':'付费 Pro 方案的 Carbon 配额单独计算。Ultra 方案提供更高的 Carbon 配额，并将其包含在更大的 Gemini 配额池中。',
     'Argon that may offload routine steps to Hydrogen. Same Argon-level quality, fewer tokens used.':'Argon 可将常规步骤交给 Hydrogen，在保持 Argon 级别质量的同时，减少 Token 用量。',
+    'Neon that may offload routine steps to Hydrogen. Same Neon-level quality, fewer tokens used.':'Neon 可将常规步骤交给 Hydrogen，在保持 Neon 级别质量的同时，减少 Token 用量。',
     'Where the agent runs, current: This Computer':'智能体运行位置，当前：本机',
     'Where the agent runs, current: Remote':'智能体运行位置，当前：远程环境',
     'Where the agent runs, current: Example_Host':'智能体运行位置，当前：Example_Host',
@@ -104,6 +105,9 @@ function scenario(hostname) {
     'Introducing Gemini 4.5 Carbon':'全新推出 Gemini 4.5 Carbon',
     'Our daily driver for rapid coding and dependable agentic execution!':'快速编程、可靠执行智能体任务的日常主力模型！',
     'Introducing ExamplePlugin':'Introducing ExamplePlugin',
+    'For most deep reasoning and complex problems':'适合大多数深度推理任务和复杂问题',
+    'The original Gemini 4 model for advanced workflows':'最初推出的 Gemini 4 模型，适合高级工作流',
+    'For speed and efficiency in execution tasks':'适合注重速度和效率的执行任务',
     'Gemini 4 Argon Weekly Limit':'Gemini 4 Argon 每周限额',
     'Gemini 4.5 Carbon Daily Limit':'Gemini 4.5 Carbon 每日限额',
     'Gemini 4 Hydrogen Five Hour Limit':'Gemini 4 Hydrogen 5 小时限额',
@@ -156,7 +160,11 @@ function scenario(hostname) {
   const noticeTextNodes=Object.keys(noticeFixtures).map(text=>new TextNode(text));
   const quotaBodyGuards=['user-message','agent-response','commentable-content','live-user-turn','live-agent-turn'].map(id=>({id,text:new TextNode(fiveHourCountdown)}));
   const quotaCodeGuard=new TextNode(fiveHourCountdown);
-  const noticeFixturesContainer=new Element('div',[...noticeTextNodes,...quotaBodyGuards.map(({id,text})=>new Element('div',[text],{'data-testid':id})),new Element('pre',[quotaCodeGuard])]);
+  const neonAnnouncementCopy='Our best balance of intelligence, cost, and latency. Get building today with Neon.';
+  const neonAnnouncement=new TextNode(neonAnnouncementCopy);
+  const quotedAnnouncement=new TextNode(neonAnnouncementCopy);
+  const neonMarkdown=new Element('div',[new Element('p',[neonAnnouncement])],{'data-markdown-root':''});
+  const noticeFixturesContainer=new Element('div',[...noticeTextNodes,...quotaBodyGuards.map(({id,text})=>new Element('div',[text],{'data-testid':id})),new Element('pre',[quotaCodeGuard]),new Element('div',[neonMarkdown],{'data-testid':'nux-card'}),new Element('div',[quotedAnnouncement],{'data-testid':'agent-response'})]);
   const quotaDetail=new TextNode('Daily limit, resets in 2h 3m');
   const quotaPercent=new TextNode('45% left');
   const splitQuotaPercent=new Element('span',[new TextNode('45'),new TextNode('% left')]);
@@ -229,11 +237,32 @@ function scenario(hostname) {
   const splitStatus=new Element('button',[new Element('span',[new Element('span',[hiddenStatus],{'data-slot-out':'true'}),new Element('span',[splitStatusPrefix],{'data-slot-in':'true'}),new Element('span',[splitStatusResource],{'data-slot-in':'true'})],{class:'text-muted-foreground truncate min-w-0',title:'Running Reading Report'})],{'data-testid':'tool-group-collapsible'});
   const changedFilesText=new TextNode('6 files changed');
   const changedFilesSpan=new Element('span',[changedFilesText],{class:'text-secondary-foreground truncate'});
-  const changedFilesHeader=new Element('div',[new Element('div',[changedFilesSpan])],{'data-testid':'changed-files-card-header'});
+  const reviewLabel=new TextNode('Review');
+  const reviewIcon=new Element('svg',[],{'aria-hidden':'true'});
+  const reviewButton=new Element('button',[reviewIcon,new Element('span',[reviewLabel])],{'data-testid':'changed-files-card-review'});
+  const unrelatedReviewLabel=new TextNode('Review');
+  const unrelatedReviewButton=new Element('button',[new Element('span',[unrelatedReviewLabel])]);
+  const changedFilesHeader=new Element('div',[new Element('div',[changedFilesSpan]),reviewButton,unrelatedReviewButton],{'data-testid':'changed-files-card-header'});
   const changedFileName=new TextNode('6 files changed');
-  const changedFilesCard=new Element('div',[changedFilesHeader,new Element('span',[changedFileName],{'data-testid':'changed-files-card-file'})],{'data-testid':'changed-files-card'});
+  const reviewFileName=new TextNode('Review');
+  const changedFilesCard=new Element('div',[changedFilesHeader,new Element('span',[changedFileName],{'data-testid':'changed-files-card-file'}),new Element('span',[reviewFileName],{'data-testid':'changed-files-card-file'})],{'data-testid':'changed-files-card'});
+  const agentReviewText=new TextNode('Review');
+  const userReviewText=new TextNode('Review');
+  const codeReviewText=new TextNode('Review');
+  const reviewInput=new Element('input',[],{value:'Review'});
+  const reviewGuards=new Element('div',[new Element('div',[agentReviewText],{'data-testid':'agent-response'}),new Element('div',[userReviewText],{'data-testid':'user-message'}),new Element('pre',[codeReviewText]),reviewInput]);
   const activityUserText=new TextNode('Running run final video composition');
-  const runtimeUiFixture=new Element('div',[timeRow,toolbar,stepTimestamp,userStep,new Element('span',[ordinaryNow]),new Element('span',[unknownTimestamp],{'data-screenshot-volatile':'true'}),new Element('div',[new Element('span',[userTimestamp],{'data-screenshot-volatile':'true',class:'text-xs text-muted-foreground cursor-default px-1 whitespace-nowrap'})],{'data-testid':'user-message',class:'flex items-center select-none text-xs'}),new Element('div',[activityButton,activityStatus,splitStatus,changedFilesCard,new Element('pre',[activityRawOutput])],{'data-testid':'agent-response'}),new Element('div',[activityUserText],{'data-testid':'user-message'})]);
+  const runtimeUiFixture=new Element('div',[timeRow,toolbar,stepTimestamp,userStep,new Element('span',[ordinaryNow]),new Element('span',[unknownTimestamp],{'data-screenshot-volatile':'true'}),new Element('div',[new Element('span',[userTimestamp],{'data-screenshot-volatile':'true',class:'text-xs text-muted-foreground cursor-default px-1 whitespace-nowrap'})],{'data-testid':'user-message',class:'flex items-center select-none text-xs'}),new Element('div',[activityButton,activityStatus,splitStatus,changedFilesCard,new Element('pre',[activityRawOutput])],{'data-testid':'agent-response'}),new Element('div',[activityUserText],{'data-testid':'user-message'}),reviewGuards]);
+  const workedForText=new TextNode('Worked for 12s');
+  const workedForChevron=new Element('svg',[],{'aria-hidden':'true'});
+  const workedForButton=new Element('button',[new Element('span',[workedForText],{class:'text-muted-foreground truncate min-w-0'}),workedForChevron],{'data-testid':'worked-for-collapsible','aria-expanded':'false'});
+  const progressUpdatesText=new TextNode('Worked for 2h 31m · 3 updates');
+  const progressUpdatesButton=new Element('button',[new Element('span',[progressUpdatesText],{class:'text-muted-foreground'})],{'data-testid':'progress-updates-collapsible','aria-label':progressUpdatesText.textContent});
+  const workedForGuards=Array.from({length:4},()=>new TextNode('Worked for 12s'));
+  const workedForInput=new Element('input',[],{value:'Worked for 12s'});
+  const workedForFixture=new Element('div',[workedForButton,progressUpdatesButton,workedForGuards[0],new Element('button',[new Element('span',[workedForGuards[1]],{class:'text-muted-foreground'})]),new Element('pre',[workedForGuards[2]]),new Element('div',[workedForGuards[3]],{'data-testid':'user-message'}),workedForInput],{'data-testid':'agent-response'});
+  runtimeUiFixture.childNodes.push(workedForFixture);
+  workedForFixture.parentElement=runtimeUiFixture;
   const hiddenBodyText=new TextNode('Waiting for user input');
   const hiddenUserText=new TextNode('Loading media...');
   const errorPrefix=new TextNode('Could not load the app view: '),rawErrorDetail=new TextNode('RAW_ERROR_TEXT');
@@ -370,6 +399,8 @@ function scenario(hostname) {
     for(let index=0;index<noticeTextNodes.length;index++) assert.equal(noticeTextNodes[index].textContent,noticeFixtures[noticeFixtureKeys[index]],'Model notice '+index);
     for(const {id,text} of quotaBodyGuards)assert.equal(text.textContent,fiveHourCountdown,'Quota-like message body must stay unchanged: '+id);
     assert.equal(quotaCodeGuard.textContent,fiveHourCountdown,'Quota-like code must stay unchanged');
+    assert.equal(neonAnnouncement.textContent,'在智能水平、成本和响应延迟之间实现最佳平衡。现在就用 Neon 开始开发。');
+    assert.equal(quotedAnnouncement.textContent,neonAnnouncementCopy,'Announcement prose quoted in chat must stay unchanged');
     const countdownNode=noticeTextNodes[noticeFixtureKeys.indexOf(fiveHourCountdown)];
     for(const [source,expected] of [
       ['You have used some of your 5-hour limit, it will fully refresh in 1 hour, 26 minutes.','你已使用部分 5 小时配额，将在 1 小时，26 分钟后全部恢复。'],
@@ -464,8 +495,44 @@ function scenario(hostname) {
     assert.equal(splitStatusPrefix.textContent,'正在运行 ');
     assert.equal(splitStatusResource.textContent,'Reading Report');
     assert.equal(hiddenStatus.textContent,'Reading Old Resource');
+    assert.equal(workedForText.textContent,'工作时长 12 秒');
+    assert.equal(workedForButton.childNodes[1],workedForChevron);
+    assert.equal(workedForButton.getAttribute('aria-expanded'),'false');
+    for (const guard of workedForGuards) assert.equal(guard.textContent,'Worked for 12s');
+    assert.equal(workedForInput.getAttribute('value'),'Worked for 12s');
+    assert.equal(progressUpdatesText.textContent,'工作时长 2 小时 31 分钟 · 3 条进度更新');
+    assert.equal(progressUpdatesButton.getAttribute('aria-label'),progressUpdatesText.textContent);
+    for (const [source,expected] of [['5m','5 分钟'],['2h','2 小时'],['1d 3h 25m','1 天 3 小时 25 分钟']]) {
+      workedForText.textContent='Worked for '+source;
+      observers[0].callback([{type:'characterData',target:workedForText}]);
+      assert.equal(workedForText.textContent,'工作时长 '+expected);
+    }
+    progressUpdatesText.textContent='1 update';
+    progressUpdatesButton.setAttribute('aria-label','1 update');
+    observers[0].callback([{type:'characterData',target:progressUpdatesText}]);
+    assert.equal(progressUpdatesText.textContent,'1 条进度更新');
+    assert.equal(progressUpdatesButton.getAttribute('aria-label'),progressUpdatesText.textContent);
+    const workedForWrites=workedForText.writes;
+    observers[0].callback([{type:'characterData',target:workedForText}]);
+    assert.equal(workedForText.writes,workedForWrites);
     assert.equal(changedFilesText.textContent,'6 个文件已更改');
     assert.equal(changedFileName.textContent,'6 files changed');
+    assert.equal(reviewLabel.textContent,'查看变更');
+    assert.equal(reviewButton.childNodes[0],reviewIcon);
+    assert.equal(reviewFileName.textContent,'Review');
+    assert.equal(unrelatedReviewLabel.textContent,'Review');
+    assert.equal(agentReviewText.textContent,'Review');
+    assert.equal(userReviewText.textContent,'Review');
+    assert.equal(codeReviewText.textContent,'Review');
+    assert.equal(reviewInput.getAttribute('value'),'Review');
+    const rerenderedReviewLabel=new TextNode('Review');
+    const rerenderedReviewSpan=new Element('span',[rerenderedReviewLabel]);
+    reviewButton.childNodes[1]=rerenderedReviewSpan;
+    rerenderedReviewSpan.parentElement=reviewButton;
+    observers[0].callback([{type:'childList',target:reviewButton,addedNodes:[rerenderedReviewSpan]}]);
+    assert.equal(rerenderedReviewLabel.textContent,'查看变更');
+    observers[0].callback([{type:'characterData',target:rerenderedReviewLabel}]);
+    assert.equal(rerenderedReviewLabel.writes,1);
     for (const [source,expected] of [['1 file changed','1 个文件已更改'],['12 files changed','12 个文件已更改']]) {
       changedFilesText.textContent=source;
       observers[0].callback([{type:'characterData',target:changedFilesText}]);

@@ -1,8 +1,8 @@
 {
   "name": "antigravity-chinese-expanded",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
-  "description": "Chinese UI patch for Windows Antigravity 2.32.1 and 2.32.2; optional Chinese conversation titles.",
+  "description": "Chinese UI patch for Windows Antigravity 2.32.1, 2.32.2, and 2.33.0; optional Chinese conversation titles.",
   "license": "MIT",
   "main": "patch.js",
   "engines": {

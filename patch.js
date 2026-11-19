@@ -8,12 +8,12 @@ const vm = require('node:vm');
 const { spawn, spawnSync } = require('node:child_process');
 
 const SUPPORTED_VERSION = '2.32.1';
-const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2'];
+const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0'];
 const PATCH_MARKER = 'ANTIGRAVITY CHINESE LOCALIZATION PATCH';
 const EXPECTED_MODULES = ['preload', 'main', 'menu', 'tray', 'updater', 'provisionSplash', 'ipcHandlers'];
 
 function requireWindows() {
-  if (process.platform !== 'win32') throw new Error('本补丁仅支持 Windows Antigravity 2.32.1 / 2.32.2。');
+  if (process.platform !== 'win32') throw new Error(`本补丁仅支持 Windows Antigravity ${SUPPORTED_VERSIONS.join(' / ')}。`);
 }
 
 function loadAsar() {
@@ -120,7 +120,7 @@ function killAntigravity(paths) {
 }
 function startAntigravity(paths) {
   if (!fs.existsSync(paths.executable)) { console.warn('未找到 Antigravity.exe，请手动启动客户端。'); return; }
-  const child = spawn(paths.executable, [], { detached: true, stdio: 'ignore', windowsHide: false });
+  const child = spawn(paths.executable, [], { cwd: paths.installDir, detached: true, stdio: 'ignore', windowsHide: false });
   child.on('error', () => console.warn('无法自动启动客户端，请手动启动。'));
   child.unref();
 }
@@ -882,7 +882,7 @@ function buildInjectScript(dict) {
     }
     const separateQuota = text.match(/^For paid Pro plans, (Argon|Carbon|Hydrogen) quota is separate\\. Higher \\1 quota \\(included as part of the larger Gemini quota bucket\\) is available on Ultra plans\\.$/);
     if (separateQuota) return '付费 Pro 方案的 ' + separateQuota[1] + ' 配额单独计算。Ultra 方案提供更高的 ' + separateQuota[1] + ' 配额，并将其包含在更大的 Gemini 配额池中。';
-    const orchestrator = text.match(/^(Argon|Carbon|Hydrogen) that may offload routine steps to (Argon|Carbon|Hydrogen|Flash)\\. Same \\1-level quality, fewer tokens used\\.$/);
+    const orchestrator = text.match(/^(Argon|Carbon|Hydrogen|Neon) that may offload routine steps to (Argon|Carbon|Hydrogen|Flash)\\. Same \\1-level quality, fewer tokens used\\.$/);
     if (orchestrator) return orchestrator[1] + ' 可将常规步骤交给 ' + orchestrator[2] + '，在保持 ' + orchestrator[1] + ' 级别质量的同时，减少 Token 用量。';
     const locationLabel = text.match(/^Where the agent runs, current: (.+)$/);
     if (locationLabel) return '智能体运行位置，当前：' + (locationLabel[1] === 'This Computer' ? '本机' : locationLabel[1] === 'Remote' ? '远程环境' : locationLabel[1]);
@@ -1029,6 +1029,27 @@ function buildInjectScript(dict) {
       const names = {Running:'正在运行', Reading:'正在读取', Editing:'正在编辑', Listing:'正在列出', Searching:'正在搜索'};
       return match[1] + names[match[2]] + match[3];
     }
+    function workedSummaryText(text, hasUpdates) {
+      if (!text) return null;
+      const updates = hasUpdates && text.match(/^(\\d+) updates?$/);
+      if (updates) return updates[1] + ' 条进度更新';
+      const match = text.match(/^Worked for (\\d+s|\\d+m|\\d+h(?: \\d+m)?|\\d+d \\d+h \\d+m)(?: · (\\d+) updates?)?$/);
+      if (!match || (match[2] && !hasUpdates)) return null;
+      const units = {d:'天', h:'小时', m:'分钟', s:'秒'};
+      const duration = match[1].replace(/(\\d+)([dhms])/g, (_, count, unit) => count + ' ' + units[unit]);
+      return '工作时长 ' + duration + (match[2] ? ' · ' + match[2] + ' 条进度更新' : '');
+    }
+    for (const button of document.querySelectorAll('[data-testid="worked-for-collapsible"], [data-testid="progress-updates-collapsible"]')) {
+      if (button.tagName !== 'BUTTON' || protectedContent(button)) continue;
+      const hasUpdates = button.getAttribute('data-testid') === 'progress-updates-collapsible';
+      const label = Array.from(button.childNodes).find(node => node.tagName === 'SPAN' && hasClasses(node, ['text-muted-foreground']));
+      if (!label || label.childNodes.length !== 1 || label.childNodes[0].nodeType !== Node.TEXT_NODE) continue;
+      const [text] = label.childNodes;
+      const translated = workedSummaryText(text.textContent, hasUpdates);
+      if (translated !== null) text.textContent = translated;
+      const aria = workedSummaryText(button.getAttribute('aria-label'), hasUpdates);
+      if (aria !== null) button.setAttribute('aria-label', aria);
+    }
     for (const root of document.querySelectorAll('[data-testid="tool-group-collapsible"], [data-testid="ephemeral-tool-status"]')) {
       const id = root.getAttribute('data-testid');
       if (!((id === 'tool-group-collapsible' && root.tagName === 'BUTTON') || (id === 'ephemeral-tool-status' && root.tagName === 'DIV')) || protectedContent(root)) continue;
@@ -1064,6 +1085,14 @@ function buildInjectScript(dict) {
     }
     for (const header of document.querySelectorAll('[data-testid="changed-files-card-header"]')) {
       if (protectedContent(header)) continue;
+      for (const button of header.childNodes) {
+        if (button.nodeType !== Node.ELEMENT_NODE || button.tagName !== 'BUTTON' || button.getAttribute('data-testid') !== 'changed-files-card-review') continue;
+        for (const label of button.childNodes) {
+          if (label.nodeType !== Node.ELEMENT_NODE || label.tagName !== 'SPAN' || label.childNodes.length !== 1) continue;
+          const [text] = label.childNodes;
+          if (text.nodeType === Node.TEXT_NODE && text.textContent === 'Review') text.textContent = '查看变更';
+        }
+      }
       const group = Array.from(header.childNodes).find(node => node.nodeType === Node.ELEMENT_NODE);
       if (!group || group.tagName !== 'DIV') continue;
       for (const label of group.childNodes) {
@@ -1686,6 +1715,6 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const invalid = args.filter(argument => !['--revert', '--no-kill', '--help', '-h'].includes(argument));
   if (invalid.length) { console.error('未知参数：' + invalid.join(' ')); process.exitCode = 1; }
-  else if (args.includes('--help') || args.includes('-h')) console.log('node patch.js [--revert] [--no-kill]\n支持 Windows Antigravity 2.32.1 / 2.32.2。请先保存工作。');
+  else if (args.includes('--help') || args.includes('-h')) console.log(`node patch.js [--revert] [--no-kill]\n支持 Windows Antigravity ${SUPPORTED_VERSIONS.join(' / ')}。请先保存工作。`);
   else (args.includes('--revert') ? revert : patch)({ noKill: args.includes('--no-kill') }).catch(error => { console.error('操作失败：' + error.message); process.exitCode = 1; });
 }

@@ -80,10 +80,10 @@ async function main() {
     await revert({ installDir: updated.installDir, noKill: true });
     assert.equal(digest(updated.app), updatedOriginal, '2.32.2 must restore its own original archive');
 
-    const unsupported = await fixture(root, 'unsupported', '2.33.0');
+    const unsupported = await fixture(root, 'unsupported', '2.34.0');
     const unknownHash = digest(unsupported.app);
-    await assert.rejects(patch({ installDir: unsupported.installDir, noKill: true }), /不支持 Antigravity 2.33.0/);
-    await assert.rejects(revert({ installDir: unsupported.installDir, noKill: true }), /不支持 Antigravity 2.33.0/);
+    await assert.rejects(patch({ installDir: unsupported.installDir, noKill: true }), /不支持 Antigravity 2.34.0/);
+    await assert.rejects(revert({ installDir: unsupported.installDir, noKill: true }), /不支持 Antigravity 2.34.0/);
     assert.equal(digest(unsupported.app), unknownHash);
     assert.equal(fs.existsSync(unsupported.backup), false);
 
