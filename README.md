@@ -22,7 +22,7 @@
 | Windows Antigravity 版本 | 最新适配包 |
 | --- | --- |
 | 2.34.0 | [v1.2.0 独立汉化器](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.0) |
-| 2.33.0 | [v1.0.9](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.9) |
+| 2.33.0 | [v1.0.10](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.10) |
 | 2.32.2 | [v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8) |
 | 2.32.1 | [v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6) |
 
