@@ -155,6 +155,27 @@ function verifyRebuiltArchive(asar, baseline, rebuilt) {
   }
   if (!containsMarker(rebuilt)) throw new Error('重新打包后缺少汉化补丁标记。');
 }
+// Copy ordinary sidecar files only. Some Windows Node builds crash in fs.cpSync
+// on this resource tree, and links could lead extraction outside the fixture.
+function copyUnpackedDirectory(source, destination) {
+  if (!fs.lstatSync(source).isDirectory()) throw new Error('外置资源目录不是普通目录。');
+
+  function copy(from, to) {
+    const entry = fs.lstatSync(from);
+    if ((!entry.isDirectory() && !entry.isFile()) || path.relative(from, fs.realpathSync.native(from))) {
+      throw new Error('外置资源含链接或特殊文件，已停止汉化。');
+    }
+    if (entry.isFile()) {
+      fs.copyFileSync(from, to, fs.constants.COPYFILE_EXCL);
+      return;
+    }
+    fs.mkdirSync(to);
+    for (const name of fs.readdirSync(from)) copy(path.join(from, name), path.join(to, name));
+  }
+
+  copy(fs.realpathSync.native(source), destination);
+}
+
 function cleanupRun(directory, temporaryRoot) {
   // Never clean a sibling run or follow a substituted run-directory symlink.
   if (!directory || !fs.existsSync(directory)) return;
@@ -213,7 +234,7 @@ async function patchUiOnly(asar, paths, options, dictionary) {
   if (!options.noKill) throw new Error('自动兼容模式只能在客户端正常退出后运行。');
   const before = options.expectedAppSha256 || sha256(paths.app);
   const checkCurrent = () => {
-    if (sha256(paths.app) !== before) throw new Error('客户端文件在汉化期间发生变化，请通过桌面入口重试。');
+    if (sha256(paths.app) !== before) throw new Error('客户端文件在汉化期间发生变化，请在汉化器里重试。');
   };
   checkCurrent();
   const version = readVersion(asar, paths.app);
@@ -254,7 +275,7 @@ async function patch(options = {}) {
   const dictionary = readDictionary(options.dictionary);
   const checkExpectedArchive = () => {
     if (options.expectedAppSha256 && sha256(paths.app) !== options.expectedAppSha256) {
-      throw new Error('客户端文件在汉化期间发生变化，请重新启动汉化启动器。');
+      throw new Error('客户端文件在汉化期间发生变化，请在汉化器里重试。');
     }
   };
   checkExpectedArchive();
@@ -271,7 +292,7 @@ async function patch(options = {}) {
     // app.asar.unpacked. Pair both under a normal temporary app.asar name.
     fs.mkdirSync(path.dirname(workingBaseline), { recursive: true });
     fs.copyFileSync(baseline, workingBaseline);
-    if (fs.existsSync(paths.app + '.unpacked')) fs.cpSync(paths.app + '.unpacked', workingBaseline + '.unpacked', { recursive: true });
+    if (fs.existsSync(paths.app + '.unpacked')) copyUnpackedDirectory(paths.app + '.unpacked', workingBaseline + '.unpacked');
     asar.extractAll(workingBaseline, extractedDir);
     transformFiles(extractedDir, dictionary);
     const unpacked = [...archiveFiles(asar, workingBaseline)].filter(([, entry]) => entry.unpacked).map(([name]) => '**/' + name);

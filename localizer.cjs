@@ -4,11 +4,13 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
-const { execFileSync, spawn } = require('node:child_process');
+const { execFileSync } = require('node:child_process');
 const { checkUiBaseline } = require('./ui-compat.cjs');
 const { readDictionaryLayers, refreshDictionary } = require('./dictionary-update.cjs');
 
 const cachePath = path.join(__dirname, 'cache', 'dictionary-online.json');
+
+class ClientBusy extends Error {}
 
 const originals = new Map([
   ['2.32.2', '056ba838faf9b75c1382a6a0ae003c4b051a3c3e50060a9e5b34987313492d77'],
@@ -56,10 +58,9 @@ function clientVersion(executable) {
 function clientStatus(executable, cache) {
   const script = [
     '$ErrorActionPreference = "Stop"',
-    '$busy = Get-Process -Name installer -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($env:AG_ZH_UPDATE_CACHE, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1',
+    '$busy = Get-Process -Name installer,Antigravity-x64 -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($env:AG_ZH_UPDATE_CACHE, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1',
     'if ($busy) { "updating"; exit }',
-    '$recent = (Get-Date).AddSeconds(-20)',
-    '$app = Get-Process -Name Antigravity -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $env:AG_ZH_EXECUTABLE -and ($_.MainWindowHandle -ne 0 -or $_.StartTime -gt $recent) } | Select-Object -First 1',
+    '$app = Get-Process -Name Antigravity -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $env:AG_ZH_EXECUTABLE } | Select-Object -First 1',
     'if ($app) { "running" } else { "idle" }',
   ].join('; ');
   const status = runPowerShell(script, {
@@ -102,7 +103,16 @@ async function applyIfNeeded(
   const asar = require('@electron/asar');
   const { patch, hasUiOnlyPatch } = require('./patch.js');
   const archive = path.join(installDir, 'resources', 'app.asar');
+  asar.uncache(archive);
   const version = JSON.parse(asar.extractFile(archive, 'package.json').toString('utf8')).version;
+  const waiting = detail => ({
+    status: 'waiting',
+    version,
+    message: detail + '。请等待汉化适配更新。',
+  });
+
+  const executableVersion = getVersion();
+  if (executableVersion !== version) return waiting('客户端程序和界面资源版本不一致');
   const installed = sha256(archive);
   const receipt = readReceipt(receiptFile);
   const knownOriginal = originals.get(version);
@@ -116,42 +126,53 @@ async function applyIfNeeded(
 
   let original = knownOriginal;
   if (uiOnly) {
-    if (getVersion() !== version) throw new Error('客户端程序和界面资源的版本不一致，暂未应用汉化。');
     const baseline = hasUiOnlyPatch(asar, archive) ? archive + '.bak' : archive;
-    if (checkUiBaseline(asar, baseline, uiProfiles) !== version) throw new Error('新版界面资源的版本校验失败。');
-    original = sha256(baseline);
+    try {
+      if (checkUiBaseline(asar, baseline, uiProfiles) !== version) return waiting('无法核对界面资源版本');
+      original = sha256(baseline);
+    } catch (error) {
+      if (error.code && error.code !== 'ENOENT') throw error;
+      return waiting('此版本的界面结构暂未通过兼容检查');
+    }
   }
   if (installed !== original) {
     const preload = asar.extractFile(archive, 'dist/preload.js').toString('utf8');
     if (!preload.includes('ANTIGRAVITY CHINESE LOCALIZATION PATCH') ||
         !fs.existsSync(archive + '.bak') || sha256(archive + '.bak') !== original) {
-      throw new Error('当前客户端文件未通过校验，启动器没有替换它。');
+      return waiting('未找到可验证的同版本原版文件');
     }
     if (receipt?.version === version && receipt.original === original &&
         (receipt.mode || 'full') === mode && receipt.revision === revision && receipt.patched === installed) {
-      return '已使用当前汉化。';
+      return uiOnly
+        ? { status: 'partial', version, message: '已有译文已应用。此版本暂未完整适配，新增文案保留原文。' }
+        : { status: 'already-applied', version, message: '当前汉化已是最新。可直接打开 Antigravity。' };
     }
   }
+
   const beforeCommit = () => {
     checkStopped();
-    if (uiOnly && getVersion() !== version) throw new Error('客户端程序在兼容检查期间发生变化。');
+    if (getVersion() !== version) throw new ClientBusy('客户端版本正在变化，请在更新完成后重试。');
   };
   checkStopped();
   const applied = await patch({ installDir, noKill: true, uiOnly, dictionary, uiProfiles, expectedAppSha256: installed, beforeCommit });
   if (applied.version !== version || applied.backupSha256 !== original) throw new Error('原版备份校验失败。');
   writeReceipt(receiptFile, { version, mode, original, revision, patched: applied.sha256 });
-  return uiOnly ? '已通过兼容检查并自动应用界面汉化。' : '已自动应用汉化。';
+  return uiOnly
+    ? { status: 'partial', version, message: '已补回已有译文。此版本暂未完整适配，新增文案保留原文。' }
+    : { status: 'applied', version, message: '汉化已应用。请通过原来的快捷方式打开 Antigravity。' };
 }
 
-async function main() {
+async function runLocalizer() {
   const local = process.env.LOCALAPPDATA;
-  if (process.platform !== 'win32' || !local) throw new Error('此启动器适用于 Windows。');
+  if (process.platform !== 'win32' || !local) throw new Error('此汉化器适用于 Windows。');
   const installDir = path.join(local, 'Programs', 'antigravity');
   const executable = path.join(installDir, 'Antigravity.exe');
   if (!fs.existsSync(executable)) throw new Error('未找到 Antigravity 安装。');
-  const cache = path.join(local, 'antigravity-updater');
-  const server = net.createServer((connection) => connection.destroy());
+  const version = clientVersion(executable);
+  const updaterCache = path.join(local, 'antigravity-updater');
+  // Older copies use the same mutex to protect the same app.asar.
   const lock = '\\\\.\\pipe\\antigravity-chinese-' + hash(installDir.toLowerCase()).slice(0, 24);
+  const server = net.createServer(connection => connection.destroy());
   try {
     await new Promise((resolve, reject) => {
       server.once('error', reject);
@@ -159,36 +180,27 @@ async function main() {
     });
   } catch (error) {
     if (error.code === 'EADDRINUSE' || error.code === 'EACCES') {
-      console.log('另一个汉化启动器正在运行。');
-      return;
+      return { status: 'busy', version, message: '另一个汉化器正在处理此安装。请稍后重试。' };
     }
     throw error;
   }
 
   const checkStopped = () => {
-    if (clientStatus(executable, cache) !== 'idle') throw new Error('客户端或更新器仍在运行，本次跳过汉化。');
+    const status = clientStatus(executable, updaterCache);
+    if (status === 'updating') throw new ClientBusy('Antigravity 正在安装更新。请等待更新完成后重试。');
+    if (status === 'running') throw new ClientBusy('请保存工作并正常退出 Antigravity，再点击重试。');
   };
   try {
-    try {
-      const status = clientStatus(executable, cache);
-      if (status === 'updating') throw new Error('Antigravity 正在安装更新，请完成后再使用桌面入口。');
-      if (status === 'idle') {
-        const update = await refreshDictionary({ cachePath });
-        if (update.status === 'updated') console.log('已更新词典：' + update.releaseTag);
-        console.log(await applyIfNeeded(installDir, checkStopped, () => clientVersion(executable)));
-      }
-      else console.log('Antigravity 已打开。若刚更新，请正常退出后再点此入口。');
-    } catch (error) {
-      console.warn(error.message);
-      process.exitCode = 1;
-      try {
-        fs.writeFileSync(path.join(__dirname, 'launcher.log'), new Date().toISOString() + ' ' + error.message + '\n');
-      } catch {}
-    }
-    if (clientStatus(executable, cache) === 'updating') return;
-    const app = spawn(executable, [], { cwd: installDir, detached: true, stdio: 'ignore', windowsHide: false });
-    app.once('error', (error) => { console.error('无法启动客户端：' + error.message); process.exitCode = 1; });
-    app.unref();
+    const update = await refreshDictionary({ cachePath, force: true });
+    checkStopped();
+    const result = await applyIfNeeded(installDir, checkStopped, () => clientVersion(executable));
+    if (update.status === 'updated') result.message += ' 已下载 GitHub 词典 ' + update.releaseTag + '。';
+    if (update.status === 'unavailable') result.message += ' 在线词典暂时不可用，已沿用本地数据。';
+    return result;
+  } catch (error) {
+    if (error instanceof ClientBusy) return { status: 'busy', version, message: error.message };
+    console.error(error.stack || error.message);
+    return { status: 'error', version, message: error.message };
   } finally {
     server.close();
   }
@@ -197,5 +209,11 @@ async function main() {
 module.exports = { applyIfNeeded };
 
 if (require.main === module) {
-  main().catch(error => { console.error(error.message); process.exitCode = 1; });
+  // Patch diagnostics go to stderr. The desktop window reads one JSON line on stdout.
+  console.log = console.error;
+  const output = result => {
+    if (result.status === 'error') process.exitCode = 1;
+    process.stdout.write(JSON.stringify(result) + '\n');
+  };
+  runLocalizer().then(output, error => output({ status: 'error', message: error.message }));
 }

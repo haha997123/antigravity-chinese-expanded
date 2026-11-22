@@ -1,23 +1,32 @@
 # Antigravity 中文界面补丁 · 扩展版
 
-这是 Windows 版 Google Antigravity 的非官方汉化工具。下载一份通用安装包，之后从桌面「Antigravity 中文」启动，启动器会在兼容的客户端上应用现有词典。
+这是 Windows 版 Google Antigravity 的非官方汉化工具。独立汉化器负责检查版本、更新词典和应用补丁。平时通过 Antigravity 原来的快捷方式打开客户端。
 
 ## 下载与安装
 
 1. 安装 Windows 版 Antigravity 和 Node.js 18 或更高版本。
-2. 从 [GitHub Releases](https://github.com/haha997123/antigravity-chinese-expanded/releases/latest) 下载 `antigravity-chinese-expanded-1.1.0.zip`（或后续通用版本），解压后双击 `install.cmd`。
-3. 保存工作并正常退出 Antigravity，再通过桌面「Antigravity 中文」启动。补丁保存在 `%LOCALAPPDATA%\AntigravityChinesePatch`，解压目录可以清理。
+2. 从下方版本表下载安装 ZIP，解压后双击 `install.cmd`。
+3. 保存工作并正常退出 Antigravity，再打开桌面「Antigravity 汉化器」。显示已应用后，通过原来的快捷方式打开 Antigravity。补丁保存在 `%LOCALAPPDATA%\AntigravityChinesePatch`，解压目录可以清理。
 
 ## 联网更新和兼容范围
 
-- 已验证的 Windows 2.32.2、2.33.0、2.34.0 原版归档可使用完整汉化。后续 2.x 稳定版通过结构检查时可应用界面汉化；未通过时打开原版并提示。
-- 启动时定期检查本仓库稳定 Release 的词典附件，校验 SHA-256 后使用新数据。离线时使用上次验证过的词典或安装包内置词典。下载内容是词典和已验证的兼容记录。启动器代码有变动时，通过新的通用安装包升级。
+- 已验证的 Windows 2.32.2、2.33.0、2.34.0 原版归档可使用完整汉化。后续 2.x 稳定版通过结构检查时可补回已有的界面译文，未通过时提示等待适配更新。
+- 打开汉化器时检查本仓库稳定 Release 的词典附件，校验 SHA-256 后使用新数据。离线时使用上次验证过的词典或安装包内置词典。下载内容是词典和已验证的兼容记录。汉化器代码有变动时，通过新的安装包升级。
 - 界面文案按完整词条或已有的明确句式翻译。未收录的文案保留原文。项目名称、代码、输入和聊天正文保留原文。
 - 如需个人译法，可在补丁目录创建 `local-dictionary.json`，内容为原文到译文的 JSON 对象。个人译法优先于在线词典。
-- Google 更新器可能直接重启官方客户端。若更新后先显示英文，正常退出再从「Antigravity 中文」打开。
+- Google 更新器可能直接重启官方客户端。若更新后先显示英文，正常退出后运行「Antigravity 汉化器」。
 - 如果要还原英文，正常退出客户端，在已安装的补丁目录双击 `restore.cmd`，再用原有的官方入口启动。
 
-仍在使用 Windows Antigravity 2.32.1 时，请下载已验证的专版。通用启动器尚未收录该版本的原版文件指纹。[2.32.1 安装包 v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6)
+## 已验证的版本与下载
+
+| Windows Antigravity 版本 | 最新适配包 |
+| --- | --- |
+| 2.34.0 | [v1.2.0 独立汉化器](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.0) |
+| 2.33.0 | [v1.0.9](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.9) |
+| 2.32.2 | [v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8) |
+| 2.32.1 | [v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6) |
+
+上方独立汉化器的操作适用于 v1.2.0。旧专版按各自发布页安装。2.32.1 使用已验证的专版。
 
 ## 手动应用补丁
 
@@ -29,7 +38,7 @@ $env:ANTIGRAVITY_INSTALL_DIR = (Resolve-Path .\Antigravity).Path
 node .\patch.js --no-kill
 ```
 
-脚本会核对原版归档并保留同版本备份。只有桌面中文启动器会自动获取在线词典。
+脚本会核对原版归档并保留同版本备份。独立汉化器打开时会获取在线词典。
 
 ## 自动中文会话标题（可选）
 

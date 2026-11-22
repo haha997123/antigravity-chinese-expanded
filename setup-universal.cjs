@@ -9,7 +9,7 @@ const SOURCE_FILES = [
   'configure-chinese-titles.cjs', 'dictionary.json', 'dictionary-update.cjs',
   'disable-chinese-titles.cmd', 'enable-chinese-titles.cmd',
   'features/chinese-title-service.js', 'features/chinese-title-worker.js',
-  'install.cmd', 'launch-local.cjs', 'launch-local.cmd', 'patch.js',
+  'install.cmd', 'launch-local.cmd', 'localizer.cjs', 'localizer.cmd', 'localizer-ui.ps1', 'patch.js',
   'package.json', 'package-lock.json', 'restore.cmd', 'setup-universal.cjs',
   'ui-compat.cjs', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md',
 ];
@@ -118,10 +118,10 @@ function createShortcut(directory) {
     "$desktop = [Environment]::GetFolderPath('DesktopDirectory')",
     "if (-not $desktop -or -not [IO.Directory]::Exists($desktop)) { throw '找不到桌面目录。' }",
     '$shell = New-Object -ComObject WScript.Shell',
-    "$target = Join-Path $env:SystemRoot 'System32\\cmd.exe'",
-    "$arguments = '/d /s /c \"\"' + (Join-Path $env:AG_ZH_SETUP_DIRECTORY 'launch-local.cmd') + '\"\"'",
+    "$target = Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'",
+    "$arguments = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -STA -File \"' + (Join-Path $env:AG_ZH_SETUP_DIRECTORY 'localizer-ui.ps1') + '\"'",
     'for ($index = 1; $index -le 100; $index++) {',
-    "  $name = if ($index -eq 1) { 'Antigravity 中文' } else { 'Antigravity 中文 (' + $index + ')' }",
+    "  $name = if ($index -eq 1) { 'Antigravity 汉化器' } else { 'Antigravity 汉化器 (' + $index + ')' }",
     "  $result = Join-Path $desktop ($name + '.lnk')",
     '  if (Test-Path -LiteralPath $result) {',
     '    if (-not (Test-Path -LiteralPath $result -PathType Leaf)) { continue }',
@@ -137,7 +137,7 @@ function createShortcut(directory) {
     '    $link.TargetPath = $target',
     '    $link.Arguments = $arguments',
     '    $link.WorkingDirectory = $env:AG_ZH_SETUP_DIRECTORY',
-    "    $link.Description = '启动 Antigravity 并应用兼容的中文补丁'",
+    "    $link.Description = '检查 Antigravity 版本、更新词典并应用兼容的汉化补丁'",
     "    $icon = Join-Path $env:LOCALAPPDATA 'Programs\\antigravity\\Antigravity.exe'",
     "    if (Test-Path -LiteralPath $icon -PathType Leaf) { $link.IconLocation = $icon + ',0' }",
     '    $link.Save()',
@@ -168,10 +168,10 @@ function main() {
   }
   const directory = installFiles(__dirname, local, npmCli);
   const shortcut = createShortcut(directory);
-  console.log('已安装中文启动器。请正常退出 Antigravity，然后双击桌面「' + shortcut + '」。');
+  console.log('已安装独立汉化器。请正常退出 Antigravity，然后双击桌面「' + shortcut + '」。');
 }
 
-module.exports = { installFiles };
+module.exports = { installFiles, createShortcut };
 if (require.main === module) {
   try { main(); }
   catch (error) { console.error('安装失败：' + error.message); process.exitCode = 1; }

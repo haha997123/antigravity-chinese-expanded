@@ -9,7 +9,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const asar = require('@electron/asar');
 const { patch, revert } = require('../patch.js');
-const { applyIfNeeded } = require('../launch-local.cjs');
+const { applyIfNeeded } = require('../localizer.cjs');
 const { checkUiBaseline } = require('../ui-compat.cjs');
 
 const expectedPristine = '8934adef0622c9271c92eea950a71848764a66f7b10023ccbd82e54b959adb0e';
@@ -58,7 +58,7 @@ async function main() {
   try {
     const copiedArchive = path.join(root, 'app.asar');
     fs.copyFileSync(sample, copiedArchive);
-    fs.cpSync(sidecar, copiedArchive + '.unpacked', { recursive: true });
+    await fs.promises.cp(sidecar, copiedArchive + '.unpacked', { recursive: true });
     const unpackedPaths = [...archiveSnapshot(copiedArchive)]
       .filter(([, entry]) => entry.unpacked)
       .map(([name]) => '**/' + name);
@@ -135,26 +135,35 @@ async function main() {
     assert.equal(fs.existsSync(changed.archive + '.bak.json'), false);
     const receipt = path.join(root, 'local-receipt.json');
     const stopped = () => {};
-    await assert.rejects(applyIfNeeded(clean.installDir, stopped, () => '2.99.1', receipt), /版本不一致/);
+    const mismatch = await applyIfNeeded(clean.installDir, stopped, () => '2.99.1', receipt);
+    assert.equal(mismatch.status, 'waiting');
+    assert.match(mismatch.message, /版本不一致/);
     assert.equal(digest(clean.archive), originalHash);
     assert.equal(fs.existsSync(receipt), false);
-    assert.match(await applyIfNeeded(clean.installDir, stopped, () => testVersion, receipt), /自动应用界面汉化/);
+    const result = await applyIfNeeded(clean.installDir, stopped, () => testVersion, receipt);
+    assert.equal(result.status, 'partial');
+    assert.match(result.message, /已补回已有译文/);
     assert.equal(digest(clean.archive), applied.sha256);
-    assert.match(await applyIfNeeded(clean.installDir, () => { throw new Error('Unexpected second write'); }, () => testVersion, receipt), /已使用当前汉化/);
+    const cached = await applyIfNeeded(clean.installDir, () => { throw new Error('Unexpected second write'); }, () => testVersion, receipt);
+    assert.equal(cached.status, 'partial');
+    assert.match(cached.message, /已有译文已应用/);
     const dictionary = require('../dictionary.json');
     const updatedDictionary = { ...dictionary, 'Search Hosts…': '搜索远程主机…' };
-    assert.match(await applyIfNeeded(clean.installDir, stopped, () => testVersion, receipt, {
+    const updated = await applyIfNeeded(clean.installDir, stopped, () => testVersion, receipt, {
       dictionary: updatedDictionary, uiProfiles: [],
-    }), /自动应用界面汉化/);
+    });
+    assert.equal(updated.status, 'partial');
     asar.uncache(clean.archive);
     assert.match(asar.extractFile(clean.archive, preload).toString('utf8'), /搜索远程主机…/);
     assert.notEqual(digest(clean.archive), applied.sha256, 'A new dictionary must invalidate the prior receipt.');
-    await assert.rejects(applyIfNeeded(changed.installDir, stopped, () => testVersion, receipt), /兼容|结构|校验|完整性/);
+    const waiting = await applyIfNeeded(changed.installDir, stopped, () => testVersion, receipt);
+    assert.equal(waiting.status, 'waiting');
+    assert.match(waiting.message, /等待汉化适配更新/);
     assert.equal(digest(changed.archive), changedHash);
     await revert({ installDir: clean.installDir, noKill: true });
     assert.equal(digest(clean.archive), originalHash);
     assert.equal(digest(sample), expectedPristine, 'The real 2.34.0 sample is read-only.');
-    console.log('UI compatibility passed: future version, launcher selection/skip, changed preload refusal, unchanged external resources, repeatable patch, exact revert.');
+    console.log('UI compatibility passed: future version, standalone status/skip, changed preload refusal, unchanged external resources, repeatable patch, exact revert.');
   } finally {
     if (path.dirname(fs.realpathSync(root)) !== temporaryRoot || fs.lstatSync(root).isSymbolicLink()) {
       throw new Error('UI compatibility test cleanup containment check failed.');

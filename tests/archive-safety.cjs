@@ -96,6 +96,14 @@ async function main() {
     assert.equal(digest(unsupported.app), unknownHash);
     assert.equal(fs.existsSync(unsupported.backup), false);
 
+    const linked = await fixture(root, 'linked-unpacked');
+    const linkedHash = digest(linked.app);
+    const linkTarget = path.join(root, 'outside-unpacked');
+    fs.mkdirSync(linkTarget);
+    fs.symlinkSync(linkTarget, path.join(linked.app + '.unpacked', 'external-resource'), 'junction');
+    await assert.rejects(patch({ installDir: linked.installDir, noKill: true }), /外置资源含链接/);
+    assert.equal(digest(linked.app), linkedHash);
+
     const invalidBackup = await fixture(root, 'invalid-backup');
     await patch({ installDir: invalidBackup.installDir, noKill: true });
     const invalidHash = digest(invalidBackup.app);
@@ -103,7 +111,7 @@ async function main() {
     await assert.rejects(patch({ installDir: invalidBackup.installDir, noKill: true }), /备份已包含汉化补丁/);
     await assert.rejects(revert({ installDir: invalidBackup.installDir, noKill: true }), /备份已包含汉化补丁/);
     assert.equal(digest(invalidBackup.app), invalidHash);
-    console.log('Archive safety passed: repeatable rebuild, exact revert, native preservation, legacy metadata, corrupted/missing/patched backup rejection, unsupported version rejection.');
+    console.log('Archive safety passed: repeatable rebuild, exact revert, native preservation, legacy metadata, external resource junction rejection, invalid backup rejection, unsupported version rejection.');
   } finally {
     if (path.dirname(fs.realpathSync(root)) !== temporaryRoot || fs.lstatSync(root).isSymbolicLink()) throw new Error('Test cleanup containment check failed');
     fs.rmSync(root, { recursive: true, force: true });

@@ -1,8 +1,8 @@
 {
   "name": "antigravity-chinese-expanded",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "Windows Antigravity Chinese UI patch with an online dictionary and guarded compatibility mode.",
+  "description": "Standalone Windows Antigravity localizer with an online dictionary and guarded compatibility mode.",
   "license": "MIT",
   "main": "patch.js",
   "engines": {

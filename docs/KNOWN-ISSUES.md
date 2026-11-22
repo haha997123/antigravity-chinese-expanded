@@ -34,6 +34,8 @@
 | 右下角 Gemini 4 Neon 公告正文仍是英文，模型列表信息图标显示英文提示 | 2.33.0 正文通过 `nux-card` 的 Markdown 渲染，模型提示来自模型配置的 `tagDescription`。补上 Neon 公告及 Neon、Argon、Hydrogen 当前固定说明，现有 Orchestrator 句式识别 Neon | localization 覆盖公告 Markdown、模型说明和正文保护；服务端修改文案时需要核对新原文 |
 | 会话中的 `Worked for …` 仍是英文 | 系统折叠控件位于聊天保护区，仅在 `worked-for-collapsible` 和 `progress-updates-collapsible` 按钮内翻译固定时长及更新数量 | localization 验证秒、分、小时、天、动态更新、无障碍标签和正文保护 |
 | Windows 2.34.0 更新后界面恢复英文 | 更新器用原版替换 `app.asar`。本机独立词典恢复了项目及 SSH 搜索、免费版与 Plus 配额说明、终端全选、旁支提问和快捷键提示的八条译文 | 2.34.0 七个修改模块均通过校验，377 个外置资源逐文件一致。隔离重复安装生成相同字节，还原等于官方原版 |
+| Windows 2.34.0 同版本出现更多英文控件 | 本机程序和 ASAR 仍为 2.34.0。根据实际嵌入的前端补入编排器、浏览器设置、沙盒权限、快捷键、侧栏和插件提示等 86 条固定文案 | 4,513 条词条；回归保护正文、代码和输入。真实原版隔离应用、七个模块语法解析、377 个外置资源和精确还原验证通过。独立汉化器已在本机重新应用 |
+| 2.34.0 模型下拉菜单中 Thinking effort 和 Extra High 为英文 | 前端的 model-selector-effort-header 和 model-selector-effort-option 显示固定标题或模型配置提供的档位。新增「推理强度」「极高」两条词条 | 界面回归覆盖标题、档位、提示及无障碍标签，保留实际档位值和会话正文 |
 
 ## 验证边界与剩余限制
 

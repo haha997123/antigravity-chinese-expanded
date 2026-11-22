@@ -49,7 +49,26 @@ for (const [hostname,isMainFrame,expected] of [
 ]) {
   const label=new TextNode('Search Hosts…');
   const missing=new TextNode('Search Hosts');
-  const body=new Element('div',[label,missing]);
+  const settingsName = new TextNode('Orchestrator Settings');
+  const browserDescription = new TextNode('Clear history, cookies and site data from the built-in browser, or manage cookies for each site.');
+  const shortcutName = new TextNode('Select Sidebar Item 9');
+  const sidebarButton = new Element('button', [], { title: 'Customize Sidebar', 'aria-label': 'Filter and Sort' });
+  const browserSearch = new Element('input', [], { placeholder: 'Search sites...' });
+  browserSearch.value = 'Orchestrator Settings';
+  const thinkingEffort = new TextNode('Thinking effort');
+  const extraHighEffort = new TextNode('Extra High');
+  const effortHelp = 'Controls how much time and quota the model spends reasoning before responding. Higher effort improves accuracy on hard problems, at the cost of slower responses and higher quota use.';
+  const effortInfo = new Element('span', [], { 'data-testid': 'model-selector-effort-info', 'aria-label': effortHelp });
+  const effortTooltip = new TextNode(effortHelp);
+  const effortHeader = new Element('div', [new Element('span', [thinkingEffort]), effortInfo], { 'data-testid': 'model-selector-effort-header' });
+  const effortOption = new Element('span', [extraHighEffort], { 'data-testid': 'model-selector-effort-option', 'data-effort': 'xhigh' });
+  const quotedEffort = new TextNode('Extra High');
+  const userText = new TextNode('Orchestrator Settings');
+  const codeText = new TextNode('Select Sidebar Item 9');
+  const body = new Element('div', [label,missing,settingsName,browserDescription,shortcutName,sidebarButton,browserSearch,
+    effortHeader, effortOption, new Element('div', [effortTooltip], { role: 'tooltip' }),
+    new Element('div', [quotedEffort], { 'data-testid': 'agent-response' }),
+    new Element('div', [userText], { 'data-testid': 'user-message' }), new Element('pre', [codeText])]);
   const showContextMenu=()=>{};
   const scope={
     process:{isMainFrame},
@@ -62,6 +81,23 @@ for (const [hostname,isMainFrame,expected] of [
   vm.runInNewContext(uiOnlyScript,scope);
   assert.equal(label.textContent,expected);
   assert.equal(missing.textContent,'Search Hosts');
+  const translated = hostname === '127.0.0.1' && isMainFrame;
+  assert.equal(settingsName.textContent, translated ? '编排器设置' : 'Orchestrator Settings');
+  assert.equal(browserDescription.textContent, translated ? '清除内置浏览器的历史记录、Cookie 和网站数据，或逐站管理 Cookie。' : 'Clear history, cookies and site data from the built-in browser, or manage cookies for each site.');
+  assert.equal(shortcutName.textContent, translated ? '选择侧栏第 9 项' : 'Select Sidebar Item 9');
+  assert.equal(sidebarButton.getAttribute('title'), translated ? '自定义侧栏' : 'Customize Sidebar');
+  assert.equal(sidebarButton.getAttribute('aria-label'), translated ? '筛选和排序' : 'Filter and Sort');
+  assert.equal(browserSearch.getAttribute('placeholder'), translated ? '搜索网站…' : 'Search sites...');
+  assert.equal(thinkingEffort.textContent, translated ? '推理强度' : 'Thinking effort');
+  assert.equal(extraHighEffort.textContent, translated ? '极高' : 'Extra High');
+  assert.equal(effortOption.getAttribute('data-effort'), 'xhigh');
+  const displayedHelp = translated ? '控制模型回答前投入推理的时间和配额。提高推理强度可以改善复杂问题的准确率，但会延长响应时间并消耗更多配额。' : effortHelp;
+  assert.equal(effortTooltip.textContent, displayedHelp);
+  assert.equal(effortInfo.getAttribute('aria-label'), displayedHelp);
+  assert.equal(quotedEffort.textContent, 'Extra High');
+  assert.equal(browserSearch.value, 'Orchestrator Settings');
+  assert.equal(userText.textContent, 'Orchestrator Settings');
+  assert.equal(codeText.textContent, 'Select Sidebar Item 9');
   assert.equal(scope.window.electronNative.showContextMenu,showContextMenu);
   assert.equal(scope._agTranslateContextMenuItems,undefined);
 }
