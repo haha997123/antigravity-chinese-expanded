@@ -17,7 +17,7 @@
 - Google 更新器可能直接重启官方客户端。若更新后先显示英文，正常退出再从「Antigravity 中文」打开。
 - 如果要还原英文，正常退出客户端，在已安装的补丁目录双击 `restore.cmd`，再用原有的官方入口启动。
 
-历史安装包：[2.33.0 对应 v1.0.9](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.9) · [2.32.2 对应 v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8) · [2.32.1 对应 v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6)。
+仍在使用 Windows Antigravity 2.32.1 时，请下载已验证的专版。通用启动器尚未收录该版本的原版文件指纹。[2.32.1 安装包 v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6)
 
 ## 手动应用补丁
 
