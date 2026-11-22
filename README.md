@@ -2,7 +2,9 @@
 
 面向 **Windows 版 Google Antigravity 2.33.0** 的非官方界面汉化补丁。插件、技能及相关产品名称保留英文，介绍、按钮、分类、设置说明等界面文字译为中文。
 
-本版在上游补丁基础上补充展开区域的漏译，包括“更多插件”、插件详情、内置技能介绍、高级权限设置、项目说明、反馈表单和模型使用情况及状态提示、配额倒计时和权限确认框。词典共 **4,419 条**，其中包含 **227 条插件详情示例请求**。这些数字表示当前收录的词条数量，不代表未来新增或服务端动态内容均已覆盖。
+本版在上游补丁基础上补充展开区域的漏译，包括“更多插件”、插件详情、内置技能介绍、高级权限设置、项目说明、反馈表单和模型使用情况及状态提示、配额倒计时和权限确认框。词典共 **4,427 条**，其中包含 **227 条插件详情示例请求**。这些数字表示当前收录的词条数量，不代表未来新增或服务端动态内容均已覆盖。
+
+v1.0.10 延续 2.33.0 已验证的适配代码，补入项目及 SSH 搜索、终端全选、旁支提问、免费和 Plus 配额等 8 条过去在本机补上的译文。
 
 v1.0.9 适配 Windows Antigravity 2.33.0。补译文件变更卡片的「查看变更」、会话中的工作时长和进度更新、Gemini 4 Neon 公告正文及模型选择器说明。补丁启动客户端时使用客户端安装目录，安装包解压目录可在安装后清理。
 
@@ -27,7 +29,7 @@ v1.0.3 补充加载、错误、空状态、账号许可、订阅限制、AI 积�
 
 ## 适用范围
 
-- Windows Antigravity **2.33.0** 使用 [v1.0.9](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.9)，**2.32.2** 使用 [v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8)，**2.32.1** 使用 [v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6)。
+- Windows Antigravity **2.33.0** 使用 [v1.0.10](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.10)，**2.32.2** 使用 [v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8)，**2.32.1** 使用 [v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6)。
 - 插件和技能名称保留英文，界面说明使用中文。
 - 补丁修改安装目录中的 `resources/app.asar`，首次应用时创建备份，可使用命令还原。
 - 界面翻译仅注入 Antigravity 的本地应用页面；代码编辑区、输入内容、会话正文和技能原始定义不作为界面文案翻译。
