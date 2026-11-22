@@ -1,8 +1,8 @@
 {
   "name": "antigravity-chinese-expanded",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "private": true,
-  "description": "Chinese UI patch for Windows Antigravity 2.32.1, 2.32.2, and 2.33.0; optional Chinese conversation titles.",
+  "description": "Windows Antigravity Chinese UI patch with an online dictionary and guarded compatibility mode.",
   "license": "MIT",
   "main": "patch.js",
   "engines": {
@@ -14,7 +14,7 @@
   "scripts": {
     "patch": "node patch.js",
     "revert": "node patch.js --revert",
-    "test": "node tests/localization.cjs && node tests/window-title.cjs && node tests/notifications.cjs && node tests/project-delete.cjs && node tests/archive-safety.cjs && node tests/chinese-title-worker.cjs && node tests/chinese-title-service.cjs && node tests/chinese-title-settings.cjs"
+    "test": "node tests/localization.cjs && node tests/window-title.cjs && node tests/notifications.cjs && node tests/project-delete.cjs && node tests/archive-safety.cjs && node tests/chinese-title-worker.cjs && node tests/chinese-title-service.cjs && node tests/chinese-title-settings.cjs && node tests/dictionary-update.cjs"
   },
   "dependencies": {
     "@electron/asar": "3.4.1"

@@ -25,6 +25,6 @@ if errorlevel 1 (
   popd
   exit /b 1
 )
-node patch.js --revert
+node patch.js --revert --no-kill
 pause
 popd

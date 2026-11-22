@@ -44,3 +44,8 @@ cache/
 .DS_Store
 Thumbs.db
 Desktop.ini
+/cache/
+/local-dictionary.json
+/launcher-receipt.json
+/launcher.log
+/original-desktop-shortcut.lnk

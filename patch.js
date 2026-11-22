@@ -6,10 +6,12 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
 const { spawn, spawnSync } = require('node:child_process');
+const { checkUiBaseline } = require('./ui-compat.cjs');
 
 const SUPPORTED_VERSION = '2.32.1';
-const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0'];
+const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0'];
 const PATCH_MARKER = 'ANTIGRAVITY CHINESE LOCALIZATION PATCH';
+const UI_PATCH_MARKER = '// ANTIGRAVITY CHINESE UI-ONLY PATCH';
 const EXPECTED_MODULES = ['preload', 'main', 'menu', 'tray', 'updater', 'provisionSplash', 'ipcHandlers'];
 
 function requireWindows() {
@@ -73,9 +75,9 @@ function writeMetadata(paths, version) {
   } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
 }
 
-function validateBackup(asar, paths, currentVersion, allowLegacyMetadata) {
+function validateBackup(asar, paths, currentVersion, allowLegacyMetadata, validate = validateArchive) {
   if (!fs.existsSync(paths.backup)) throw new Error('缺少原始 app.asar.bak；不能从已汉化客户端创建英文备份。请先重新安装同版本官方客户端。');
-  const backupVersion = validateArchive(asar, paths.backup);
+  const backupVersion = validate(asar, paths.backup);
   if (backupVersion !== currentVersion) throw new Error('备份与当前客户端版本不一致，已停止。');
   if (containsMarker(paths.backup)) throw new Error('备份已包含汉化补丁，不能作为英文原版使用。');
   if (fs.existsSync(paths.metadata)) {
@@ -94,15 +96,15 @@ function validateBackup(asar, paths, currentVersion, allowLegacyMetadata) {
   return paths.backup;
 }
 
-function prepareBaseline(asar, paths, version) {
-  if (containsMarker(paths.app)) return validateBackup(asar, paths, version, true);
+function prepareBaseline(asar, paths, version, validate = validateArchive) {
+  if (containsMarker(paths.app)) return validateBackup(asar, paths, version, true, validate);
   // A newly installed or updated official archive becomes the clean baseline.
   // Do not reuse an old archive merely because a .bak file already exists.
   if (!fs.existsSync(paths.backup) || sha256(paths.backup) !== sha256(paths.app)) {
     atomicCopy(paths.app, paths.backup);
     writeMetadata(paths, version);
   } else if (!fs.existsSync(paths.metadata)) writeMetadata(paths, version);
-  return validateBackup(asar, paths, version, false);
+  return validateBackup(asar, paths, version, false, validate);
 }
 
 function killAntigravity(paths) {
@@ -161,13 +163,101 @@ function cleanupRun(directory, temporaryRoot) {
   fs.rmSync(directory, { recursive: true, force: true });
 }
 
+function readDictionary(override) {
+  const dictionary = override === undefined ? JSON.parse(fs.readFileSync(path.join(__dirname, 'dictionary.json'), 'utf8')) : override;
+  if (!dictionary || Array.isArray(dictionary) || typeof dictionary !== 'object' || Object.entries(dictionary).some(([key, value]) => !key || typeof value !== 'string')) throw new Error('汉化词典格式不正确。');
+  return dictionary;
+}
+
+function hasUiOnlyPatch(asar, archive) {
+  asar.uncache(archive);
+  try { return asar.extractFile(archive, 'dist/preload.js').includes(UI_PATCH_MARKER); }
+  catch { return false; }
+}
+
+function uiArchiveBytes(asar, original, dictionary) {
+  const { header, headerSize } = asar.getRawHeader(original);
+  const archive = fs.readFileSync(original);
+  const payload = archive.subarray(8 + headerSize);
+  const preload = header.files.dist.files['preload.js'];
+  const start = Number(preload.offset);
+  const input = payload.subarray(start, start + preload.size);
+  const translation = Buffer.from('\n;\n' + UI_PATCH_MARKER + '\n' + buildInjectScript(dictionary, { uiOnly: true }));
+  const output = Buffer.concat([input, translation]);
+  new vm.Script(output.toString('utf8'), { filename: 'dist/preload.js' });
+  const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  const blockSize = preload.integrity.blockSize;
+  const blocks = [];
+  for (let offset = 0; offset < output.length; offset += blockSize) {
+    blocks.push(digest(output.subarray(offset, offset + blockSize)));
+  }
+  if (output.length % blockSize === 0) blocks.push(digest(Buffer.alloc(0)));
+  preload.size = output.length;
+  preload.offset = String(payload.length);
+  preload.integrity = { ...preload.integrity, hash: digest(output), blocks };
+
+  // ASAR stores a size pickle followed by a UTF-8 JSON pickle. Keep the old
+  // payload as-is and put the appended preload at a new offset.
+  const json = Buffer.from(JSON.stringify(header));
+  const paddedLength = Math.ceil(json.length / 4) * 4;
+  const prefix = Buffer.alloc(16 + paddedLength);
+  prefix.writeUInt32LE(4, 0);
+  prefix.writeUInt32LE(8 + paddedLength, 4);
+  prefix.writeUInt32LE(4 + paddedLength, 8);
+  prefix.writeUInt32LE(json.length, 12);
+  json.copy(prefix, 16);
+  return { bytes: Buffer.concat([prefix, payload, output]), preload: output };
+}
+
+async function patchUiOnly(asar, paths, options, dictionary) {
+  if (!options.noKill) throw new Error('自动兼容模式只能在客户端正常退出后运行。');
+  const before = options.expectedAppSha256 || sha256(paths.app);
+  const checkCurrent = () => {
+    if (sha256(paths.app) !== before) throw new Error('客户端文件在汉化期间发生变化，请通过桌面入口重试。');
+  };
+  checkCurrent();
+  const version = readVersion(asar, paths.app);
+  const alreadyPatched = hasUiOnlyPatch(asar, paths.app);
+  const original = alreadyPatched ? paths.backup : paths.app;
+  const originalHash = sha256(original);
+  const validate = (format, archive) => checkUiBaseline(format, archive, options.uiProfiles);
+  if (validate(asar, original) !== version) throw new Error('原版备份与当前客户端版本不一致。');
+  const rendered = uiArchiveBytes(asar, original, dictionary);
+  if (sha256(original) !== originalHash) throw new Error('原版文件在准备汉化期间发生变化。');
+  const tempRoot = fs.realpathSync(os.tmpdir());
+  const work = fs.mkdtempSync(path.join(tempRoot, 'antigravity-ui-'));
+  try {
+    const file = path.join(work, 'app.asar');
+    fs.writeFileSync(file, rendered.bytes, { flag: 'wx' });
+    if (readVersion(asar, file) !== version ||
+        !asar.extractFile(file, 'dist/preload.js').equals(rendered.preload)) {
+      throw new Error('新版界面汉化文件校验失败。');
+    }
+    await options.beforeCommit?.();
+    checkCurrent();
+    if (sha256(original) !== originalHash) throw new Error('原版备份在汉化期间发生变化。');
+    const backup = prepareBaseline(asar, paths, version, validate);
+    if (sha256(backup) !== originalHash) throw new Error('原版备份校验失败。');
+    checkCurrent();
+    atomicCopy(file, paths.app);
+  } finally {
+    cleanupRun(work, tempRoot);
+  }
+  return { version, sha256: sha256(paths.app), backupSha256: originalHash };
+}
+
 async function patch(options = {}) {
   requireWindows();
   const asar = loadAsar(), paths = getPaths(options.installDir);
+  if (options.uiOnly) return patchUiOnly(asar, paths, options, readDictionary(options.dictionary));
   const version = validateArchive(asar, paths.app);
-  const dictionaryPath = path.join(__dirname, 'dictionary.json');
-  const dictionary = JSON.parse(fs.readFileSync(dictionaryPath, 'utf8'));
-  if (!dictionary || Array.isArray(dictionary) || typeof dictionary !== 'object' || Object.entries(dictionary).some(([key, value]) => !key || typeof value !== 'string')) throw new Error('汉化词典格式不正确。');
+  const dictionary = readDictionary(options.dictionary);
+  const checkExpectedArchive = () => {
+    if (options.expectedAppSha256 && sha256(paths.app) !== options.expectedAppSha256) {
+      throw new Error('客户端文件在汉化期间发生变化，请重新启动汉化启动器。');
+    }
+  };
+  checkExpectedArchive();
   const baseline = prepareBaseline(asar, paths, version);
   if (!options.noKill) killAntigravity(paths);
   const temporaryRoot = fs.realpathSync(os.tmpdir());
@@ -191,6 +281,8 @@ async function patch(options = {}) {
     // Recheck the baseline immediately before replacement.
     validateBackup(asar, paths, version, false);
     validateArchive(asar, paths.app);
+    await options.beforeCommit?.();
+    checkExpectedArchive();
     atomicCopy(rebuilt, paths.app);
   } finally { cleanupRun(temporary, temporaryRoot); }
   console.log(`汉化补丁已应用：Antigravity ${version}，${Object.keys(dictionary).length} 条词条。`);
@@ -201,8 +293,9 @@ async function patch(options = {}) {
 async function revert(options = {}) {
   requireWindows();
   const asar = loadAsar(), paths = getPaths(options.installDir);
-  const version = validateArchive(asar, paths.app);
-  const backup = validateBackup(asar, paths, version, true);
+  const uiOnly = hasUiOnlyPatch(asar, paths.app);
+  const version = uiOnly ? readVersion(asar, paths.app) : validateArchive(asar, paths.app);
+  const backup = validateBackup(asar, paths, version, !uiOnly, uiOnly ? readVersion : validateArchive);
   if (!options.noKill) killAntigravity(paths);
   atomicCopy(backup, paths.app);
   console.log('已还原为同版本的英文原版，账号、会话和项目配置未修改。');
@@ -546,11 +639,11 @@ try {
 
 }
 
-function buildInjectScript(dict) {
+function buildInjectScript(dict, { uiOnly = false } = {}) {
   return `
 // ==================== ANTIGRAVITY CHINESE LOCALIZATION PATCH ====================
 (function() {
-  if (window.location.protocol !== 'https:' || !['127.0.0.1', 'localhost'].includes(window.location.hostname)) return;
+  if (${uiOnly ? "typeof process === 'undefined' || process.isMainFrame !== true || " : ''}window.location.protocol !== 'https:' || !['127.0.0.1', 'localhost'].includes(window.location.hostname)) return;
   const dictionary = ${JSON.stringify(dict, null, 2)};
 
   // Pre-normalize dictionary keys for whitespace robustness
@@ -1272,23 +1365,7 @@ function buildInjectScript(dict) {
       return normalizedDict[normalizedText];
     }
     
-    // 2. Handle trailing ellipsis (...) or truncated text for long descriptions
-    let cleanText = normalizedText;
-    if (normalizedText.endsWith('...')) {
-      cleanText = normalizedText.slice(0, -3).trim();
-    } else if (normalizedText.endsWith('…')) {
-      cleanText = normalizedText.slice(0, -1).trim();
-    }
-    
-    if (cleanText.length > 20) {
-      for (const key in normalizedDict) {
-        if (key.startsWith(cleanText)) {
-          return normalizedDict[key];
-        }
-      }
-    }
-
-    // 3. Dynamic Regex translation for Token Usage percentage
+    // Dynamic translation for recorded token usage labels.
     const budgetMatch = normalizedText.match(/^([\\d.]+)%\\s+of\\s+the\\s+customization\\s+budget\\s+is\\s+available\\.$/i);
     if (budgetMatch) {
       return \`可用自定义额度为 \${budgetMatch[1]}%。\`;
@@ -1514,7 +1591,7 @@ function buildInjectScript(dict) {
     return translated;
   }
 
-  function translateContextMenuItems(items, parentId = '') {
+${uiOnly ? '' : `  function translateContextMenuItems(items, parentId = '') {
     if (!Array.isArray(items)) return items;
     return items.map((item) => {
       if (!item || typeof item !== 'object') return item;
@@ -1553,7 +1630,7 @@ function buildInjectScript(dict) {
     } catch {}
   }
 
-  function translateNode(node) {
+`}  function translateNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
       if (isInExcludedZone(node)) return;
       const translated = translateText(node.textContent);
@@ -1710,7 +1787,7 @@ function buildInjectScript(dict) {
 `;
 }
 
-module.exports = { patch, revert, buildInjectScript, SUPPORTED_VERSION, SUPPORTED_VERSIONS };
+module.exports = { patch, revert, buildInjectScript, hasUiOnlyPatch, SUPPORTED_VERSION, SUPPORTED_VERSIONS };
 if (require.main === module) {
   const args = process.argv.slice(2);
   const invalid = args.filter(argument => !['--revert', '--no-kill', '--help', '-h'].includes(argument));
