@@ -5,8 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const vm = require('node:vm');
-const { spawn, spawnSync } = require('node:child_process');
-const { checkUiBaseline } = require('./ui-compat.cjs');
+const { spawnSync } = require('node:child_process');
 
 const SUPPORTED_VERSION = '2.32.1';
 const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0'];
@@ -24,7 +23,8 @@ function loadAsar() {
 }
 
 function getPaths(installDirectory) {
-  const installDir = path.resolve(installDirectory || process.env.ANTIGRAVITY_INSTALL_DIR || path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'antigravity'));
+  const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+  const installDir = path.resolve(installDirectory || process.env.ANTIGRAVITY_INSTALL_DIR || path.join(localAppData, 'Programs', 'antigravity'));
   const resourcesDir = path.join(installDir, 'resources');
   return {
     installDir, resourcesDir,
@@ -96,35 +96,35 @@ function validateBackup(asar, paths, currentVersion, allowLegacyMetadata, valida
   return paths.backup;
 }
 
-function prepareBaseline(asar, paths, version, validate = validateArchive) {
-  if (containsMarker(paths.app)) return validateBackup(asar, paths, version, true, validate);
+function prepareBaseline(asar, paths, version) {
+  if (containsMarker(paths.app)) return validateBackup(asar, paths, version, true);
   // A newly installed or updated official archive becomes the clean baseline.
   // Do not reuse an old archive merely because a .bak file already exists.
   if (!fs.existsSync(paths.backup) || sha256(paths.backup) !== sha256(paths.app)) {
     atomicCopy(paths.app, paths.backup);
     writeMetadata(paths, version);
   } else if (!fs.existsSync(paths.metadata)) writeMetadata(paths, version);
-  return validateBackup(asar, paths, version, false, validate);
+  return validateBackup(asar, paths, version, false);
 }
 
-function killAntigravity(paths) {
-  const query = '$ErrorActionPreference="Stop"; Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $env:ANTIGRAVITY_PATCH_EXECUTABLE } | ForEach-Object { $_.ProcessId }';
+function requireClosedClient(paths) {
+  // A copied archive can be tested in isolation without a client executable.
+  if (!fs.existsSync(paths.executable)) return;
+  const query = [
+    '$ErrorActionPreference = "Stop"',
+    '$apps = Get-Process -Name Antigravity -ErrorAction SilentlyContinue',
+    '$running = $apps | Where-Object { -not $_.Path -or $_.Path -eq $env:ANTIGRAVITY_PATCH_EXECUTABLE }',
+    'if ($running) { "running" } else { "closed" }',
+  ].join('; ');
   const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', query], {
-    encoding: 'utf8', windowsHide: true,
+    encoding: 'utf8', windowsHide: true, timeout: 10000,
     env: { ...process.env, ANTIGRAVITY_PATCH_EXECUTABLE: paths.executable }
   });
-  if (result.error || result.status !== 0) throw new Error('无法检查客户端进程。请手动退出 Antigravity 后使用 --no-kill。');
-  for (const identifier of result.stdout.trim().split(/\s+/).filter(Boolean)) {
-    if (!/^\d+$/.test(identifier)) throw new Error('进程检查返回了非预期结果，已停止。');
-    const stopped = spawnSync('taskkill.exe', ['/PID', identifier, '/T', '/F'], { windowsHide: true, stdio: 'ignore' });
-    if (stopped.error) throw stopped.error;
+  const state = result.stdout?.trim();
+  if (result.error || result.status !== 0 || !['running', 'closed'].includes(state)) {
+    throw new Error('无法确认客户端是否已退出，已停止操作。');
   }
-}
-function startAntigravity(paths) {
-  if (!fs.existsSync(paths.executable)) { console.warn('未找到 Antigravity.exe，请手动启动客户端。'); return; }
-  const child = spawn(paths.executable, [], { cwd: paths.installDir, detached: true, stdio: 'ignore', windowsHide: false });
-  child.on('error', () => console.warn('无法自动启动客户端，请手动启动。'));
-  child.unref();
+  if (state === 'running') throw new Error('请先保存工作并正常退出 Antigravity，再运行安装或还原脚本。');
 }
 
 function archiveFiles(asar, archive) {
@@ -196,91 +196,17 @@ function hasUiOnlyPatch(asar, archive) {
   catch { return false; }
 }
 
-function uiArchiveBytes(asar, original, dictionary) {
-  const { header, headerSize } = asar.getRawHeader(original);
-  const archive = fs.readFileSync(original);
-  const payload = archive.subarray(8 + headerSize);
-  const preload = header.files.dist.files['preload.js'];
-  const start = Number(preload.offset);
-  const input = payload.subarray(start, start + preload.size);
-  const translation = Buffer.from('\n;\n' + UI_PATCH_MARKER + '\n' + buildInjectScript(dictionary, { uiOnly: true }));
-  const output = Buffer.concat([input, translation]);
-  new vm.Script(output.toString('utf8'), { filename: 'dist/preload.js' });
-  const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-  const blockSize = preload.integrity.blockSize;
-  const blocks = [];
-  for (let offset = 0; offset < output.length; offset += blockSize) {
-    blocks.push(digest(output.subarray(offset, offset + blockSize)));
-  }
-  if (output.length % blockSize === 0) blocks.push(digest(Buffer.alloc(0)));
-  preload.size = output.length;
-  preload.offset = String(payload.length);
-  preload.integrity = { ...preload.integrity, hash: digest(output), blocks };
-
-  // ASAR stores a size pickle followed by a UTF-8 JSON pickle. Keep the old
-  // payload as-is and put the appended preload at a new offset.
-  const json = Buffer.from(JSON.stringify(header));
-  const paddedLength = Math.ceil(json.length / 4) * 4;
-  const prefix = Buffer.alloc(16 + paddedLength);
-  prefix.writeUInt32LE(4, 0);
-  prefix.writeUInt32LE(8 + paddedLength, 4);
-  prefix.writeUInt32LE(4 + paddedLength, 8);
-  prefix.writeUInt32LE(json.length, 12);
-  json.copy(prefix, 16);
-  return { bytes: Buffer.concat([prefix, payload, output]), preload: output };
-}
-
-async function patchUiOnly(asar, paths, options, dictionary) {
-  if (!options.noKill) throw new Error('自动兼容模式只能在客户端正常退出后运行。');
-  const before = options.expectedAppSha256 || sha256(paths.app);
-  const checkCurrent = () => {
-    if (sha256(paths.app) !== before) throw new Error('客户端文件在汉化期间发生变化，请在汉化器里重试。');
-  };
-  checkCurrent();
-  const version = readVersion(asar, paths.app);
-  const alreadyPatched = hasUiOnlyPatch(asar, paths.app);
-  const original = alreadyPatched ? paths.backup : paths.app;
-  const originalHash = sha256(original);
-  const validate = (format, archive) => checkUiBaseline(format, archive, options.uiProfiles);
-  if (validate(asar, original) !== version) throw new Error('原版备份与当前客户端版本不一致。');
-  const rendered = uiArchiveBytes(asar, original, dictionary);
-  if (sha256(original) !== originalHash) throw new Error('原版文件在准备汉化期间发生变化。');
-  const tempRoot = fs.realpathSync(os.tmpdir());
-  const work = fs.mkdtempSync(path.join(tempRoot, 'antigravity-ui-'));
-  try {
-    const file = path.join(work, 'app.asar');
-    fs.writeFileSync(file, rendered.bytes, { flag: 'wx' });
-    if (readVersion(asar, file) !== version ||
-        !asar.extractFile(file, 'dist/preload.js').equals(rendered.preload)) {
-      throw new Error('新版界面汉化文件校验失败。');
-    }
-    await options.beforeCommit?.();
-    checkCurrent();
-    if (sha256(original) !== originalHash) throw new Error('原版备份在汉化期间发生变化。');
-    const backup = prepareBaseline(asar, paths, version, validate);
-    if (sha256(backup) !== originalHash) throw new Error('原版备份校验失败。');
-    checkCurrent();
-    atomicCopy(file, paths.app);
-  } finally {
-    cleanupRun(work, tempRoot);
-  }
-  return { version, sha256: sha256(paths.app), backupSha256: originalHash };
-}
-
 async function patch(options = {}) {
   requireWindows();
   const asar = loadAsar(), paths = getPaths(options.installDir);
-  if (options.uiOnly) return patchUiOnly(asar, paths, options, readDictionary(options.dictionary));
+  requireClosedClient(paths);
   const version = validateArchive(asar, paths.app);
   const dictionary = readDictionary(options.dictionary);
-  const checkExpectedArchive = () => {
-    if (options.expectedAppSha256 && sha256(paths.app) !== options.expectedAppSha256) {
-      throw new Error('客户端文件在汉化期间发生变化，请在汉化器里重试。');
-    }
-  };
-  checkExpectedArchive();
+  const originalAppHash = sha256(paths.app);
+  const changedAppMessage = '客户端文件在汉化期间发生变化，请确认版本后重试。';
+  if (options.expectedAppSha256 && options.expectedAppSha256 !== originalAppHash) throw new Error(changedAppMessage);
   const baseline = prepareBaseline(asar, paths, version);
-  if (!options.noKill) killAntigravity(paths);
+  const baselineHash = sha256(baseline);
   const temporaryRoot = fs.realpathSync(os.tmpdir());
   const temporary = fs.mkdtempSync(path.join(temporaryRoot, 'antigravity-chinese-'));
   const extractedDir = path.join(temporary, 'extracted');
@@ -300,27 +226,31 @@ async function patch(options = {}) {
     await asar.createPackageWithOptions(extractedDir, rebuilt, unpack ? { unpack } : {});
     verifyRebuiltArchive(asar, workingBaseline, rebuilt);
     // Recheck the baseline immediately before replacement.
-    validateBackup(asar, paths, version, false);
-    validateArchive(asar, paths.app);
     await options.beforeCommit?.();
-    checkExpectedArchive();
+    requireClosedClient(paths);
+    if (sha256(paths.app) !== originalAppHash) throw new Error(changedAppMessage);
+    validateBackup(asar, paths, version, false);
+    if (sha256(baseline) !== baselineHash) throw new Error('原始备份在汉化期间发生变化，请重试。');
     atomicCopy(rebuilt, paths.app);
   } finally { cleanupRun(temporary, temporaryRoot); }
   console.log(`汉化补丁已应用：Antigravity ${version}，${Object.keys(dictionary).length} 条词条。`);
-  if (!options.noKill) startAntigravity(paths);
   return { version, sha256: sha256(paths.app), backupSha256: sha256(paths.backup) };
 }
 
 async function revert(options = {}) {
   requireWindows();
   const asar = loadAsar(), paths = getPaths(options.installDir);
+  requireClosedClient(paths);
+  const currentHash = sha256(paths.app);
+  // Older builds could leave a UI-only patch in an otherwise unlisted version.
+  // Restore just its verified same-version backup without offering a new patch.
   const uiOnly = hasUiOnlyPatch(asar, paths.app);
   const version = uiOnly ? readVersion(asar, paths.app) : validateArchive(asar, paths.app);
   const backup = validateBackup(asar, paths, version, !uiOnly, uiOnly ? readVersion : validateArchive);
-  if (!options.noKill) killAntigravity(paths);
+  requireClosedClient(paths);
+  if (sha256(paths.app) !== currentHash) throw new Error('客户端文件在还原期间发生变化，请确认版本后重试。');
   atomicCopy(backup, paths.app);
   console.log('已还原为同版本的英文原版，账号、会话和项目配置未修改。');
-  if (!options.noKill) startAntigravity(paths);
   return { version, sha256: sha256(paths.app) };
 }
 
@@ -660,11 +590,11 @@ try {
 
 }
 
-function buildInjectScript(dict, { uiOnly = false } = {}) {
+function buildInjectScript(dict) {
   return `
 // ==================== ANTIGRAVITY CHINESE LOCALIZATION PATCH ====================
 (function() {
-  if (${uiOnly ? "typeof process === 'undefined' || process.isMainFrame !== true || " : ''}window.location.protocol !== 'https:' || !['127.0.0.1', 'localhost'].includes(window.location.hostname)) return;
+  if (window.location.protocol !== 'https:' || !['127.0.0.1', 'localhost'].includes(window.location.hostname)) return;
   const dictionary = ${JSON.stringify(dict, null, 2)};
 
   // Pre-normalize dictionary keys for whitespace robustness
@@ -1612,7 +1542,7 @@ function buildInjectScript(dict, { uiOnly = false } = {}) {
     return translated;
   }
 
-${uiOnly ? '' : `  function translateContextMenuItems(items, parentId = '') {
+  function translateContextMenuItems(items, parentId = '') {
     if (!Array.isArray(items)) return items;
     return items.map((item) => {
       if (!item || typeof item !== 'object') return item;
@@ -1651,9 +1581,25 @@ ${uiOnly ? '' : `  function translateContextMenuItems(items, parentId = '') {
     } catch {}
   }
 
-`}  function translateNode(node) {
+  function translateRestorePageIcon(node) {
+    const icon = node.parentElement;
+    if (!icon || !icon.matches('span.google-symbols') || icon.getAttribute('aria-hidden') !== 'true') return false;
+    for (let row = icon.parentElement; row; row = row.parentElement) {
+      const testId = row.getAttribute('data-testid') || '';
+      if (!testId.startsWith('fastpick-item-') && !row.matches('.agy-overlay-item')) continue;
+      if (row.getAttribute('data-item-id') !== 'reopenClosedAuxTab' &&
+          !row.textContent.includes('Reopen Closed Tab') && !row.textContent.includes('重新打开关闭的标签页')) return false;
+      // The client renders this icon as a font ligature, which can appear as its name.
+      node.textContent = '↶';
+      return true;
+    }
+    return false;
+  }
+
+  function translateNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
       if (isInExcludedZone(node)) return;
+      if (node.textContent === 'restore_page' && translateRestorePageIcon(node)) return;
       const translated = translateText(node.textContent);
       if (translated !== null && translated !== node.textContent) {
         node.textContent = translated;
@@ -1808,11 +1754,11 @@ ${uiOnly ? '' : `  function translateContextMenuItems(items, parentId = '') {
 `;
 }
 
-module.exports = { patch, revert, buildInjectScript, hasUiOnlyPatch, SUPPORTED_VERSION, SUPPORTED_VERSIONS };
+module.exports = { patch, revert, buildInjectScript, SUPPORTED_VERSION, SUPPORTED_VERSIONS };
 if (require.main === module) {
   const args = process.argv.slice(2);
   const invalid = args.filter(argument => !['--revert', '--no-kill', '--help', '-h'].includes(argument));
   if (invalid.length) { console.error('未知参数：' + invalid.join(' ')); process.exitCode = 1; }
-  else if (args.includes('--help') || args.includes('-h')) console.log(`node patch.js [--revert] [--no-kill]\n支持 Windows Antigravity ${SUPPORTED_VERSIONS.join(' / ')}。请先保存工作。`);
-  else (args.includes('--revert') ? revert : patch)({ noKill: args.includes('--no-kill') }).catch(error => { console.error('操作失败：' + error.message); process.exitCode = 1; });
+  else if (args.includes('--help') || args.includes('-h')) console.log(`node patch.js [--revert] [--no-kill]\n支持 Windows Antigravity ${SUPPORTED_VERSIONS.join(' / ')}。请先保存工作并正常退出客户端。`);
+  else (args.includes('--revert') ? revert : patch)().catch(error => { console.error('操作失败：' + error.message); process.exitCode = 1; });
 }

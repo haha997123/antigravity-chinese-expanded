@@ -41,11 +41,9 @@ class Element {
   getAttribute(name) { return this.attributes[name] ?? null; }
   setAttribute(name,value) { this.attributes[name]=value; }
 }
-const uiOnlyScript=buildInjectScript(dictionary,{uiOnly:true});
-for (const [hostname,isMainFrame,expected] of [
-  ['127.0.0.1',true,'搜索主机…'],
-  ['127.0.0.1',false,'Search Hosts…'],
-  ['example.com',true,'Search Hosts…'],
+for (const [hostname,expected] of [
+  ['127.0.0.1','搜索主机…'],
+  ['example.com','Search Hosts…'],
 ]) {
   const label=new TextNode('Search Hosts…');
   const missing=new TextNode('Search Hosts');
@@ -62,26 +60,42 @@ for (const [hostname,isMainFrame,expected] of [
   const effortTooltip = new TextNode(effortHelp);
   const effortHeader = new Element('div', [new Element('span', [thinkingEffort]), effortInfo], { 'data-testid': 'model-selector-effort-header' });
   const effortOption = new Element('span', [extraHighEffort], { 'data-testid': 'model-selector-effort-option', 'data-effort': 'xhigh' });
+  const offloadHelp = "Offloads routine steps to a faster executor. Same quality, fewer tokens used.";
+  const offloadTooltip = new TextNode(offloadHelp);
+  const restoreGlyph = new TextNode('restore_page');
+  const overlayRestoreGlyph = new TextNode('restore_page');
+  const unrelatedGlyph = new TextNode('restore_page');
+  const codeRestoreName = new TextNode('restore_page');
+  const restoreLabel = new TextNode('Reopen Closed Tab');
+  const restoreIcon = glyph => new Element('span', [glyph], { class: 'google-symbols', 'aria-hidden': 'true' });
+  const restoreRow = new Element('div', [new Element('div', [restoreIcon(restoreGlyph), new Element('span', [restoreLabel])])],
+    { 'data-item-id': 'reopenClosedAuxTab', 'data-testid': 'fastpick-item-reopenClosedAuxTab' });
+  const overlayRestoreRow = new Element('div', [restoreIcon(overlayRestoreGlyph), new Element('span', [new TextNode('重新打开关闭的标签页')])],
+    { class: 'agy-overlay-item' });
+  const unrelatedRow = new Element('div', [restoreIcon(unrelatedGlyph), new Element('span', [new TextNode('Other command')])],
+    { 'data-testid': 'fastpick-item-other' });
+  const quotedOffloadHelp = new TextNode(offloadHelp);
   const quotedEffort = new TextNode('Extra High');
   const userText = new TextNode('Orchestrator Settings');
   const codeText = new TextNode('Select Sidebar Item 9');
   const body = new Element('div', [label,missing,settingsName,browserDescription,shortcutName,sidebarButton,browserSearch,
     effortHeader, effortOption, new Element('div', [effortTooltip], { role: 'tooltip' }),
-    new Element('div', [quotedEffort], { 'data-testid': 'agent-response' }),
+    new Element('div', [offloadTooltip], { role: 'tooltip' }),
+    restoreRow, overlayRestoreRow, unrelatedRow, new Element('code', [codeRestoreName]),
+    new Element('div', [quotedEffort, quotedOffloadHelp], { 'data-testid': 'agent-response' }),
     new Element('div', [userText], { 'data-testid': 'user-message' }), new Element('pre', [codeText])]);
   const showContextMenu=()=>{};
   const scope={
-    process:{isMainFrame},
     window:{location:{protocol:'https:',hostname,pathname:'/'},electronNative:{showContextMenu}},
     document:{body,readyState:'complete',querySelector:()=>null,querySelectorAll:(selector)=>body.querySelectorAll(selector)},
     Node:{TEXT_NODE:3,ELEMENT_NODE:1},
     MutationObserver:class {observe(){} disconnect(){}},
     console,
   };
-  vm.runInNewContext(uiOnlyScript,scope);
+  vm.runInNewContext(injected,scope);
   assert.equal(label.textContent,expected);
   assert.equal(missing.textContent,'Search Hosts');
-  const translated = hostname === '127.0.0.1' && isMainFrame;
+  const translated = hostname === '127.0.0.1';
   assert.equal(settingsName.textContent, translated ? '编排器设置' : 'Orchestrator Settings');
   assert.equal(browserDescription.textContent, translated ? '清除内置浏览器的历史记录、Cookie 和网站数据，或逐站管理 Cookie。' : 'Clear history, cookies and site data from the built-in browser, or manage cookies for each site.');
   assert.equal(shortcutName.textContent, translated ? '选择侧栏第 9 项' : 'Select Sidebar Item 9');
@@ -94,12 +108,20 @@ for (const [hostname,isMainFrame,expected] of [
   const displayedHelp = translated ? '控制模型回答前投入推理的时间和配额。提高推理强度可以改善复杂问题的准确率，但会延长响应时间并消耗更多配额。' : effortHelp;
   assert.equal(effortTooltip.textContent, displayedHelp);
   assert.equal(effortInfo.getAttribute('aria-label'), displayedHelp);
+  assert.equal(offloadTooltip.textContent, translated ? "把常规步骤交给更快的执行模型，保持同等质量，同时减少 Token 用量。" : offloadHelp);
+  assert.equal(quotedOffloadHelp.textContent, offloadHelp);
+  assert.equal(restoreGlyph.textContent, translated ? '↶' : 'restore_page');
+  assert.equal(overlayRestoreGlyph.textContent, translated ? '↶' : 'restore_page');
+  assert.equal(restoreLabel.textContent, translated ? '重新打开关闭的标签页' : 'Reopen Closed Tab');
+  assert.equal(restoreRow.getAttribute('data-item-id'), 'reopenClosedAuxTab');
+  assert.equal(unrelatedGlyph.textContent, 'restore_page');
+  assert.equal(codeRestoreName.textContent, 'restore_page');
   assert.equal(quotedEffort.textContent, 'Extra High');
   assert.equal(browserSearch.value, 'Orchestrator Settings');
   assert.equal(userText.textContent, 'Orchestrator Settings');
   assert.equal(codeText.textContent, 'Select Sidebar Item 9');
-  assert.equal(scope.window.electronNative.showContextMenu,showContextMenu);
-  assert.equal(scope._agTranslateContextMenuItems,undefined);
+  assert.equal(scope.window.electronNative.showContextMenu === showContextMenu, !translated);
+  assert.equal(typeof scope._agTranslateContextMenuItems, translated ? 'function' : 'undefined');
 }
 
 function scenario(hostname) {

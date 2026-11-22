@@ -4446,6 +4446,7 @@
   "Search sites...": "搜索网站…",
   "Orchestrator Settings": "编排器设置",
   "Choose the models Orchestrator uses. A larger, smarter orchestrator model with a faster, cheaper executor gives high quality for fewer tokens.": "选择编排器使用的模型。让能力更强的模型负责统筹、较快且成本较低的模型负责执行，可用更少的 Token 获得高质量结果。",
+  "Offloads routine steps to a faster executor. Same quality, fewer tokens used.": "把常规步骤交给更快的执行模型，保持同等质量，同时减少 Token 用量。",
   "Orchestrator Model": "编排模型",
   "Plans the work, makes design decisions, and reviews the result. Pick a top-tier model. You can also pick one per conversation from the Orchestrator row in the model menu.": "负责规划工作、制定设计决策并审查结果。请选择能力强的模型，也可以在模型菜单的 Orchestrator 项中为单个会话选择。",
   "Executor Model": "执行模型",

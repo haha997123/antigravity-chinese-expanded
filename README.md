@@ -1,32 +1,25 @@
 # Antigravity 中文界面补丁 · 扩展版
 
-这是 Windows 版 Google Antigravity 的非官方汉化工具。独立汉化器负责检查版本、更新词典和应用补丁。平时通过 Antigravity 原来的快捷方式打开客户端。
+这是 Windows 版 Google Antigravity 的非官方界面汉化补丁。按客户端版本下载安装包，手动应用后，照常从原有的快捷方式打开 Antigravity。
 
 ## 下载与安装
 
-1. 安装 Windows 版 Antigravity 和 Node.js 18 或更高版本。
-2. 从下方版本表下载安装 ZIP，解压后双击 `install.cmd`。
-3. 保存工作并正常退出 Antigravity，再打开桌面「Antigravity 汉化器」。显示已应用后，通过原来的快捷方式打开 Antigravity。补丁保存在 `%LOCALAPPDATA%\AntigravityChinesePatch`，解压目录可以清理。
+1. 安装 Windows 版 Antigravity 和随附 npm 的 Node.js 18 或更高版本。
+2. 从下表下载与客户端版本对应的 ZIP 并解压。
+3. 保存工作并正常退出 Antigravity，双击解压目录中的 `install.cmd`。补丁成功应用后，从原来的快捷方式打开客户端。
 
-## 联网更新和兼容范围
+应用会核对客户端资源并保留同版本原版备份。若要还原英文，先正常退出客户端，再双击 `restore.cmd`。官方更新覆盖补丁后，从下表选择适配当前客户端版本的安装包。
 
-- 已验证的 Windows 2.32.2、2.33.0、2.34.0 原版归档可使用完整汉化。后续 2.x 稳定版通过结构检查时可补回已有的界面译文，未通过时提示等待适配更新。
-- 打开汉化器时检查本仓库稳定 Release 的词典附件，校验 SHA-256 后使用新数据。离线时使用上次验证过的词典或安装包内置词典。下载内容是词典和已验证的兼容记录。汉化器代码有变动时，通过新的安装包升级。
-- 界面文案按完整词条或已有的明确句式翻译。未收录的文案保留原文。项目名称、代码、输入和聊天正文保留原文。
-- 如需个人译法，可在补丁目录创建 `local-dictionary.json`，内容为原文到译文的 JSON 对象。个人译法优先于在线词典。
-- Google 更新器可能直接重启官方客户端。若更新后先显示英文，正常退出后运行「Antigravity 汉化器」。
-- 如果要还原英文，正常退出客户端，在已安装的补丁目录双击 `restore.cmd`，再用原有的官方入口启动。
+界面文案按固定词条和已有句式翻译。项目名称、代码、输入、聊天正文及未收录的文案保留原文。
 
 ## 已验证的版本与下载
 
 | Windows Antigravity 版本 | 最新适配包 |
 | --- | --- |
-| 2.34.0 | [v1.2.0 独立汉化器](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.0) |
+| 2.34.0 | [v1.2.1](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.1) |
 | 2.33.0 | [v1.0.10](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.10) |
 | 2.32.2 | [v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8) |
 | 2.32.1 | [v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6) |
-
-上方独立汉化器的操作适用于 v1.2.0。旧专版按各自发布页安装。2.32.1 使用已验证的专版。
 
 ## 手动应用补丁
 
@@ -38,7 +31,7 @@ $env:ANTIGRAVITY_INSTALL_DIR = (Resolve-Path .\Antigravity).Path
 node .\patch.js --no-kill
 ```
 
-脚本会核对原版归档并保留同版本备份。独立汉化器打开时会获取在线词典。
+脚本会核对原版归档并保留同版本备份。
 
 ## 自动中文会话标题（可选）
 
