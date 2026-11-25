@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory)] [string] $OutputDirectory,
     [Parameter(Mandatory)] [string] $NpmCli,
     [string] $Node = 'node.exe',
-    [string] $Revision = 'HEAD'
+    [string] $Revision = 'HEAD',
+    [ValidatePattern('^\d+\.\d+\.\d+$')] [string[]] $ClientVersions = @()
 )
 
 $ErrorActionPreference = 'Stop'
@@ -80,14 +81,25 @@ Get-ChildItem -LiteralPath $runtime,$dependencyRoot -Recurse -File | Sort-Object
     $relativePath = $_.FullName.Substring($packagePathPrefix.Length).Replace('\', '/')
     $hashes[$relativePath] = Get-FileSha256 $_.FullName
 }
-$manifest = [ordered]@{ schemaVersion = 1; sourceCommit = $commit; nodeVersion = $nodeVersion; files = $hashes }
-[IO.File]::WriteAllText((Join-Path $runtime 'manifest.json'), (($manifest | ConvertTo-Json -Depth 4) + "`n"), $utf8)
-
-$zipName = "$prefix-$packageVersion.zip"
-$zip = Join-Path $output $zipName
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[IO.Compression.ZipFile]::CreateFromDirectory($package, $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
-$zipSha = Get-FileSha256 $zip
-[IO.File]::WriteAllText((Join-Path $output 'SHA256SUMS.txt'), "$zipSha  $zipName`n", $utf8)
-Write-Output $zip
-Write-Output $zipSha
+$targets = if ($ClientVersions.Count) { $ClientVersions | Select-Object -Unique } else { '' }
+foreach ($clientVersion in $targets) {
+    $manifest = [ordered]@{ schemaVersion = 1; sourceCommit = $commit; nodeVersion = $nodeVersion; files = $hashes }
+    $destination = $output
+    $suffix = ''
+    if ($clientVersion) {
+        $manifest['clientVersion'] = $clientVersion
+        $suffix = "-ag$clientVersion"
+        $destination = Join-Path $output "ag$clientVersion"
+        New-Item -ItemType Directory -Path $destination -Force | Out-Null
+    }
+    [IO.File]::WriteAllText((Join-Path $runtime 'manifest.json'), (($manifest | ConvertTo-Json -Depth 4) + "`n"), $utf8)
+
+    $zipName = "$prefix-$packageVersion$suffix.zip"
+    $zip = Join-Path $destination $zipName
+    [IO.Compression.ZipFile]::CreateFromDirectory($package, $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
+    $zipSha = Get-FileSha256 $zip
+    [IO.File]::WriteAllText((Join-Path $destination 'SHA256SUMS.txt'), "$zipSha  $zipName`n", $utf8)
+    Write-Output $zip
+    Write-Output $zipSha
+}

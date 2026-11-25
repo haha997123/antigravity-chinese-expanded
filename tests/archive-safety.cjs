@@ -84,9 +84,15 @@ async function main() {
 
     const updated = await fixture(root, 'updated-2.32.2', '2.32.2');
     const updatedOriginal = digest(updated.app);
-    await patch({ installDir: updated.installDir, noKill: true });
+    await assert.rejects(patch({ installDir: updated.installDir, clientVersion: '2.32.1' }), /适配 Antigravity 2.32.1，当前客户端为 2.32.2/);
+    assert.equal(digest(updated.app), updatedOriginal);
+    assert.equal(fs.existsSync(updated.backup), false);
+    await patch({ installDir: updated.installDir, clientVersion: '2.32.2' });
     assert.equal(JSON.parse(fs.readFileSync(updated.metadata)).version, '2.32.2');
-    await revert({ installDir: updated.installDir, noKill: true });
+    const updatedPatched = digest(updated.app);
+    await assert.rejects(revert({ installDir: updated.installDir, clientVersion: '2.32.1' }), /适配 Antigravity 2.32.1，当前客户端为 2.32.2/);
+    assert.equal(digest(updated.app), updatedPatched);
+    await revert({ installDir: updated.installDir, clientVersion: '2.32.2' });
     assert.equal(digest(updated.app), updatedOriginal, '2.32.2 must restore its own original archive');
 
     const unsupported = await fixture(root, 'unsupported', '2.99.0');

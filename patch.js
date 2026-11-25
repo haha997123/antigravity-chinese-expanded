@@ -54,6 +54,22 @@ function validateArchive(asar, archive) {
   return version;
 }
 
+function readReleaseTarget() {
+  const manifest = path.join(__dirname, 'runtime', 'manifest.json');
+  if (!fs.existsSync(manifest)) return undefined;
+  const { clientVersion } = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+  if (clientVersion !== undefined && !SUPPORTED_VERSIONS.includes(clientVersion)) {
+    throw new Error('安装包的目标客户端版本无效，请重新下载对应版本的 ZIP。');
+  }
+  return clientVersion;
+}
+
+function requireReleaseTarget(version, expectedVersion) {
+  if (expectedVersion && version !== expectedVersion) {
+    throw new Error(`此安装包适配 Antigravity ${expectedVersion}，当前客户端为 ${version}。请下载对应版本的 ZIP。`);
+  }
+}
+
 // Write next to the destination, flush, then replace in one rename operation.
 // A failed copy never truncates the installed archive or its original backup.
 function atomicCopy(from, to) {
@@ -201,6 +217,7 @@ async function patch(options = {}) {
   const asar = loadAsar(), paths = getPaths(options.installDir);
   requireClosedClient(paths);
   const version = validateArchive(asar, paths.app);
+  requireReleaseTarget(version, options.clientVersion);
   const dictionary = readDictionary(options.dictionary);
   const originalAppHash = sha256(paths.app);
   const changedAppMessage = '客户端文件在汉化期间发生变化，请确认版本后重试。';
@@ -246,6 +263,7 @@ async function revert(options = {}) {
   // Restore just its verified same-version backup without offering a new patch.
   const uiOnly = hasUiOnlyPatch(asar, paths.app);
   const version = uiOnly ? readVersion(asar, paths.app) : validateArchive(asar, paths.app);
+  requireReleaseTarget(version, options.clientVersion);
   const backup = validateBackup(asar, paths, version, !uiOnly, uiOnly ? readVersion : validateArchive);
   requireClosedClient(paths);
   if (sha256(paths.app) !== currentHash) throw new Error('客户端文件在还原期间发生变化，请确认版本后重试。');
@@ -1846,5 +1864,8 @@ if (require.main === module) {
   const invalid = args.filter(argument => !['--revert', '--no-kill', '--help', '-h'].includes(argument));
   if (invalid.length) { console.error('未知参数：' + invalid.join(' ')); process.exitCode = 1; }
   else if (args.includes('--help') || args.includes('-h')) console.log(`node patch.js [--revert] [--no-kill]\n支持 Windows Antigravity ${SUPPORTED_VERSIONS.join(' / ')}。请先保存工作并正常退出客户端。`);
-  else (args.includes('--revert') ? revert : patch)().catch(error => { console.error('操作失败：' + error.message); process.exitCode = 1; });
+  else Promise.resolve().then(() => {
+    const operate = args.includes('--revert') ? revert : patch;
+    return operate({ clientVersion: readReleaseTarget() });
+  }).catch(error => { console.error('操作失败：' + error.message); process.exitCode = 1; });
 }

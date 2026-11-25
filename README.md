@@ -7,7 +7,7 @@
 1. 安装对应版本的 Windows Antigravity，从下表打开该版本的发行页，下载附件中的 `antigravity-chinese-expanded-*.zip` 并完整解压。
 2. 保存工作并正常退出 Antigravity，双击解压目录中的 `install.cmd`。补丁成功应用后，从原来的快捷方式打开客户端。
 
-v1.2.4 起，离线 ZIP 随附 Windows x64 和 ARM64 的便携 Node.js 及运行依赖。解压后即可离线安装和还原。旧版本的前置条件见各自的发行页。
+下表中的离线 ZIP 随附 Windows x64 和 ARM64 的便携 Node.js 及运行依赖。解压后即可离线安装和还原。
 
 应用会核对客户端资源并保留同版本原版备份。若要还原英文，先正常退出客户端，再双击 `restore.cmd`。官方更新覆盖补丁后，从下表选择适配当前客户端版本的安装包。
 
@@ -18,10 +18,10 @@ v1.2.4 起，离线 ZIP 随附 Windows x64 和 ARM64 的便携 Node.js 及运行
 | Windows Antigravity 版本 | 最新适配包 |
 | --- | --- |
 | 2.35.1 | [v1.2.4](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.4) |
-| 2.34.0 | [v1.2.1](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.1) |
-| 2.33.0 | [v1.0.10](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.10) |
-| 2.32.2 | [v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8) |
-| 2.32.1 | [v1.0.6](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.6) |
+| 2.34.0 | [v1.2.5 · 2.34.0](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.5-ag2.34.0) |
+| 2.33.0 | [v1.2.5 · 2.33.0](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.5-ag2.33.0) |
+| 2.32.2 | [v1.2.5 · 2.32.2](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.5-ag2.32.2) |
+| 2.32.1 | [v1.2.5 · 2.32.1](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.5-ag2.32.1) |
 
 ## 手动应用补丁
 
