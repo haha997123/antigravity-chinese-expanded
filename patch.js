@@ -611,7 +611,9 @@ function buildInjectScript(dict) {
   function isExcludedElement(el) {
     if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
     if (EXCLUDE_TAGS.has(el.tagName)) return true;
-    return typeof el.matches === 'function' && el.matches(EXCLUDE_SELECTOR);
+    if (typeof el.matches !== 'function') return false;
+    return el.matches(EXCLUDE_SELECTOR) || (el.matches('.font-mono.leading-relaxed') &&
+      el.parentElement?.previousElementSibling?.getAttribute('data-testid') === 'theme-code-preview-toggle');
   }
 
   function isInExcludedZone(node) {
@@ -1608,6 +1610,71 @@ function buildInjectScript(dict) {
     return false;
   }
 
+  const sharedThemePresets = { Catppuccin: '猫布奇诺', Everforest: '常青森林', 'Gruvbox Material': '复古材质' };
+  const themePresets = {
+    light: { ...sharedThemePresets, 'Default Light': '默认浅色', 'Legacy Light': '经典浅色',
+      'One Light': '一号浅色', 'Solarized Light': '日光浅色' },
+    dark: { ...sharedThemePresets, 'Default Dark': '默认深色', 'Legacy Dark': '经典深色', Dracula: '德古拉',
+      Monokai: '莫诺凯', Nord: '北境', 'One Dark Pro': '一号深色专业版', 'Tokyo Night': '东京之夜',
+      'Solarized Dark': '日光深色', Vesper: '暮星' }
+  };
+  const themeColors = { Background: '背景色', Foreground: '前景色', Accent: '强调色' };
+
+  function appearanceSection(element) {
+    const section = element.closest('.space-y-2');
+    const heading = section?.querySelector('h3.m-0.font-medium')?.textContent;
+    if (heading === 'Light Theme' || heading === '浅色主题') return 'light';
+    if (heading === 'Dark Theme' || heading === '深色主题') return 'dark';
+    if (heading === 'Appearance' || heading === '外观') return 'appearance';
+    return null;
+  }
+
+  function presetMode(control) {
+    if (!control?.getAttribute('aria-labelledby')?.startsWith('theme-preset-label-')) return null;
+    const mode = appearanceSection(control);
+    return Object.hasOwn(themePresets, mode) ? mode : null;
+  }
+
+  function translateAppearanceText(node) {
+    const element = node.parentElement;
+    if (!element) return null;
+    const text = node.textContent;
+    let mode;
+    if (element.id?.startsWith('dropdown-value-') && element.parentElement?.matches('button.agy-select-trigger')) {
+      mode = presetMode(element.parentElement);
+    } else if (element.tagName === 'OPTION') {
+      mode = presetMode(element.parentElement);
+    } else if (element.matches('div.truncate')) {
+      const option = element.closest('.agy-overlay-item[role="option"]');
+      const list = option?.closest('[role="listbox"]');
+      if (list?.id.endsWith('-list') && list.closest('[data-select-popup]')) {
+        const trigger = document.getElementById(list.id.slice(0, -5));
+        mode = presetMode(trigger);
+        if (mode && option.querySelector('[data-testid="theme-preset-plugin-icon"]')) return text;
+      }
+    }
+    // A plugin can use a built-in name from the other mode. Keep all unrecognized preset names verbatim.
+    if (mode) return Object.hasOwn(themePresets[mode], text) ? themePresets[mode][text] : text;
+
+    if (text === 'Strong' && element.closest('[data-slot="toggle-group"]') && appearanceSection(element) === 'appearance') return '增强';
+    if (text.startsWith('from ') && element.matches('span.sr-only') && element.closest('[data-testid="theme-preset-plugin-icon"]')) {
+      return text === 'from a plugin' ? '来自插件' : '来自 ' + text.slice(5);
+    }
+    if (element.tagName === 'SPAN' && Object.hasOwn(themeColors, text) && Object.hasOwn(themePresets, appearanceSection(element))) {
+      return themeColors[text];
+    }
+    return null;
+  }
+
+  function translateThemeColorAttribute(element, text) {
+    const suffix = ' color picker';
+    const isPicker = element.tagName === 'BUTTON' && text.endsWith(suffix);
+    const color = isPicker ? text.slice(0, -suffix.length) : text;
+    if (!isPicker && (element.tagName !== 'INPUT' || element.getAttribute('type') !== 'text')) return null;
+    if (!Object.hasOwn(themeColors, color) || !Object.hasOwn(themePresets, appearanceSection(element))) return null;
+    return themeColors[color] + (isPicker ? '取色器' : '');
+  }
+
   function translateNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
       if (isInExcludedZone(node)) return;
@@ -1619,7 +1686,7 @@ function buildInjectScript(dict) {
           return;
         }
       }
-      const translated = translateText(node.textContent);
+      const translated = translateAppearanceText(node) ?? translateText(node.textContent);
       if (translated !== null && translated !== node.textContent) {
         node.textContent = translated;
       }
@@ -1638,7 +1705,7 @@ function buildInjectScript(dict) {
       // Tooltips and titles
       if (node.hasAttribute('title')) {
         const title = node.getAttribute('title');
-        const translated = translateText(title);
+        const translated = translateThemeColorAttribute(node, title) ?? translateText(title);
         if (translated !== null && translated !== title) {
           node.setAttribute('title', translated);
         }
@@ -1646,7 +1713,7 @@ function buildInjectScript(dict) {
       // ARIA labels (commonly used by icon-only buttons)
       if (node.hasAttribute('aria-label')) {
         const ariaLabel = node.getAttribute('aria-label');
-        const translated = translateText(ariaLabel);
+        const translated = translateThemeColorAttribute(node, ariaLabel) ?? translateText(ariaLabel);
         if (translated !== null && translated !== ariaLabel) {
           node.setAttribute('aria-label', translated);
         }

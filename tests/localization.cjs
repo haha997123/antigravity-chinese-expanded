@@ -20,14 +20,21 @@ class Element {
     for(const child of children) child.parentElement=this;
   }
   get textContent() { return this.childNodes.map(node=>node.textContent).join(''); }
+  get id() { return this.getAttribute('id') ?? ''; }
+  get previousElementSibling() {
+    const siblings = this.parentElement?.childNodes ?? [];
+    return siblings.slice(0, siblings.indexOf(this)).filter(node => node.nodeType === 1).at(-1) ?? null;
+  }
   matches(selector) {
     return selector.split(',').some(part => {
       part=part.trim();
-      if(/^(?:[a-z]+)?(?:\.[a-z0-9_-]+)+$/i.test(part)) { const chunks=part.split('.');return (!chunks[0]||this.tagName===chunks[0].toUpperCase())&&chunks.slice(1).every(name=>(this.attributes.class||'').split(' ').includes(name)); }
-      if(part==='[title]') return this.hasAttribute('title');
-      if(part==='span[data-screenshot-volatile]') return this.tagName==='SPAN' && this.hasAttribute('data-screenshot-volatile');
-      if(part.startsWith('[data-testid=')) return part.includes('"'+this.attributes['data-testid']+'"');
+      if(/^(?:[a-z][a-z0-9-]*)?(?:\.[a-z0-9_-]+)+$/i.test(part)) { const chunks=part.split('.');return (!chunks[0]||this.tagName===chunks[0].toUpperCase())&&chunks.slice(1).every(name=>(this.attributes.class||'').split(' ').includes(name)); }
       if(part.startsWith('[contenteditable]')) return this.attributes.contenteditable && this.attributes.contenteditable!=='false';
+      const attribute = part.match(/^([^\[]*)\[([\w-]+)(?:="([^"]*)")?\]$/);
+      if (attribute) {
+        const [, base, name, value] = attribute;
+        return (!base || this.matches(base)) && (value === undefined ? this.hasAttribute(name) : this.getAttribute(name) === value);
+      }
       if (/^[a-z]+$/i.test(part)) return this.tagName===part.toUpperCase();
       return part.startsWith('.') && (this.attributes.class||'').split(' ').includes(part.slice(1));
     });
@@ -36,6 +43,13 @@ class Element {
     const result=[];
     function visit(element) {for(const child of element.childNodes) if(child.nodeType===1) {if(child.matches(selector)) result.push(child);visit(child);}}
     visit(this);return result;
+  }
+  querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
+  closest(selector) {
+    for (let element = this; element; element = element.parentElement) {
+      if (element.matches(selector)) return element;
+    }
+    return null;
   }
   hasAttribute(name) { return Object.hasOwn(this.attributes,name); }
   getAttribute(name) { return this.attributes[name] ?? null; }
@@ -193,6 +207,96 @@ for (const [hostname,expected] of [
   }
   assert.equal(scope.window.electronNative.showContextMenu === showContextMenu, !translated);
   assert.equal(typeof scope._agTranslateContextMenuItems, translated ? 'function' : 'undefined');
+}
+
+{
+  const labels = text => new Element('span', [new TextNode(text)]);
+  const section = (heading, children) => new Element('div', [
+    new Element('div', [new Element('h3', [new TextNode(heading)], { class: 'm-0 font-medium' })]),
+    new Element('div', [new Element('div', children, { class: 'agy-card' })]),
+  ], { class: 'space-y-2' });
+  const trigger = (mode, current) => new Element('button', [
+    new Element('span', [new TextNode(current)], { class: 'truncate', id: 'dropdown-value-' + mode }),
+  ], { id: 'preset-' + mode, class: 'agy-select-trigger', 'aria-labelledby': 'theme-preset-label-' + mode + ' dropdown-value-' + mode });
+  const option = (preset, plugin = false) => new Element('div', [
+    new Element('div', [new Element('div', [new TextNode(preset)], { class: 'truncate' })]),
+    ...(plugin ? [new Element('span', [], { 'data-testid': 'theme-preset-plugin-icon' })] : []),
+  ], { role: 'option', class: 'agy-overlay-item' });
+  const background = labels('Background');
+  const foreground = labels('Foreground');
+  const accent = labels('Accent');
+  const picker = new Element('button', [], { 'aria-label': 'Background color picker' });
+  const colorInput = new Element('input', [], { type: 'text', 'aria-label': 'Foreground' });
+  colorInput.value = 'ADEE70';
+  const previewText = new TextNode('Background');
+  const toggle = new Element('button', [labels('Code Preview')], { 'data-testid': 'theme-code-preview-toggle', 'data-mode': 'light' });
+  const preview = new Element('div', [new Element('div', [labels('Settings'), new Element('span', [previewText])], { class: 'font-mono leading-relaxed' })]);
+  const lightTrigger = trigger('light', 'Default Light');
+  const darkTrigger = trigger('dark', 'Tokyo Night');
+  const nativeOption = new Element('option', [new TextNode('Legacy Dark')], { value: 'Legacy Dark' });
+  const nativeSelect = new Element('select', [nativeOption], { 'aria-labelledby': 'theme-preset-label-dark' });
+  const strong = labels('Strong');
+  const strongElsewhere = labels('Strong');
+  const ordinaryBackground = labels('Background');
+  const quotedPreset = new TextNode('Default Light');
+  const typedPreset = new Element('input', [], { type: 'text' });
+  typedPreset.value = 'Default Light';
+  const body = new Element('body', [
+    section('Appearance', [new Element('div', [strong], { 'data-slot': 'toggle-group' })]),
+    section('Light Theme', [lightTrigger, background, foreground, accent, picker, colorInput, toggle, preview]),
+    section('Dark Theme', [darkTrigger, nativeSelect]),
+    strongElsewhere, ordinaryBackground, typedPreset,
+    new Element('div', [quotedPreset], { 'data-testid': 'user-message' }),
+  ]);
+  let onMutation;
+  vm.runInNewContext(injected, {
+    window: { location: { protocol: 'https:', hostname: '127.0.0.1' } },
+    document: { body, readyState: 'complete', querySelector: () => null, querySelectorAll: selector => body.querySelectorAll(selector),
+      getElementById: id => body.querySelector('[id="' + id + '"]') },
+    Node: { TEXT_NODE: 3, ELEMENT_NODE: 1 },
+    MutationObserver: class { constructor(callback) { this.callback = callback; } observe(target) { if (target === body) onMutation = this.callback; } disconnect() {} },
+    console,
+  });
+  assert.equal(lightTrigger.textContent, '默认浅色');
+  assert.equal(darkTrigger.textContent, '东京之夜');
+  assert.equal(nativeOption.textContent, '经典深色');
+  assert.equal(nativeOption.getAttribute('value'), 'Legacy Dark');
+  assert.equal(strong.textContent, '增强');
+  assert.equal(strongElsewhere.textContent, 'Strong');
+  assert.equal(background.textContent, '背景色');
+  assert.equal(foreground.textContent, '前景色');
+  assert.equal(accent.textContent, '强调色');
+  assert.equal(picker.getAttribute('aria-label'), '背景色取色器');
+  assert.equal(colorInput.getAttribute('aria-label'), '前景色');
+  assert.equal(colorInput.value, 'ADEE70');
+  assert.equal(ordinaryBackground.textContent, '后台');
+  assert.equal(toggle.textContent, '代码预览');
+  assert.equal(preview.textContent, 'SettingsBackground');
+  assert.equal(quotedPreset.textContent, 'Default Light');
+  assert.equal(typedPreset.value, 'Default Light');
+
+  const forest = option('Everforest');
+  const pluginWithCrossModeName = option('Dracula', true);
+  const pluginWithDictionaryName = option('Settings', true);
+  const popup = new Element('div', [forest, pluginWithCrossModeName, pluginWithDictionaryName],
+    { role: 'listbox', id: 'preset-light-list', 'data-select-popup': '' });
+  popup.parentElement = body;
+  body.childNodes.push(popup);
+  onMutation([{ type: 'childList', target: body, addedNodes: [popup] }]);
+  assert.equal(forest.textContent, '常青森林');
+  assert.equal(pluginWithCrossModeName.textContent, 'Dracula');
+  assert.equal(pluginWithDictionaryName.textContent, 'Settings');
+
+  const selection = lightTrigger.childNodes[0].childNodes[0];
+  selection.textContent = 'Settings';
+  onMutation([{ type: 'characterData', target: selection }]);
+  assert.equal(lightTrigger.textContent, 'Settings');
+  selection.textContent = 'Solarized Light';
+  onMutation([{ type: 'characterData', target: selection }]);
+  assert.equal(lightTrigger.textContent, '日光浅色');
+  const writes = selection.writes;
+  onMutation([{ type: 'characterData', target: selection }]);
+  assert.equal(selection.writes, writes);
 }
 
 function scenario(hostname) {
