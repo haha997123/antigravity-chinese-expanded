@@ -62,6 +62,28 @@ for (const [hostname,expected] of [
   const effortOption = new Element('span', [extraHighEffort], { 'data-testid': 'model-selector-effort-option', 'data-effort': 'xhigh' });
   const offloadHelp = "Offloads routine steps to a faster executor. Same quality, fewer tokens used.";
   const offloadTooltip = new TextNode(offloadHelp);
+  const leavingBadge = new TextNode('Leaving Soon');
+  const modelName = new TextNode('Gemini 4 Argon');
+  const leavingHelp = 'The original Gemini 4 model for advanced workflows. Leaving on Nov 30.';
+  const leavingHelpWithYear = 'The original Gemini 4 model for advanced workflows. Leaving on December 9, 2027.';
+  const invalidLeavingHelp = new TextNode('The original Gemini 4 model for advanced workflows. Leaving on Nov 32.');
+  const hydrogenHelp = 'Use Hydrogen for better quality with lower quota usage. Leaving on Nov 30.';
+  const alternateHydrogenHelp = 'Use Hydrogen for better quality with lower quota usage. Leaving on Dec 7.';
+  const carbonHelp = 'For your hardest, long-horizon tasks';
+  const unknownLeavingHelp = 'An unfamiliar model description. Leaving on Nov 30.';
+  const hydrogenTooltip = new TextNode(hydrogenHelp);
+  const alternateHydrogenTooltip = new TextNode(alternateHydrogenHelp);
+  const carbonTooltip = new TextNode(carbonHelp);
+  const unknownLeavingTooltip = new TextNode(unknownLeavingHelp);
+  const quotedHydrogenHelp = new TextNode(hydrogenHelp);
+  const quotedCarbonHelp = new TextNode(carbonHelp);
+  const leavingTooltip = new TextNode(leavingHelp);
+  const leavingTooltipWithYear = new TextNode(leavingHelpWithYear);
+  const quotedLeavingHelp = new TextNode(leavingHelp);
+  const quotedLeavingBadge = new TextNode('Leaving Soon');
+  const projectPicker = new TextNode('Open Project Picker');
+  const projectPickerRow = new Element('div', [projectPicker], { 'data-item-id': 'openWorkspaceSelector', 'data-testid': 'fastpick-item-openWorkspaceSelector' });
+  const quotedProjectPicker = new TextNode('Open Project Picker');
   const restoreGlyph = new TextNode('restore_page');
   const overlayRestoreGlyph = new TextNode('restore_page');
   const unrelatedGlyph = new TextNode('restore_page');
@@ -78,18 +100,36 @@ for (const [hostname,expected] of [
   const quotedEffort = new TextNode('Extra High');
   const userText = new TextNode('Orchestrator Settings');
   const codeText = new TextNode('Select Sidebar Item 9');
+  const countText = new TextNode('2 of 8');
+  const quotedCount = new TextNode('2 of 8');
+  const codeCount = new TextNode('2 of 8');
+  const countInput = new Element('input', [], { placeholder: 'Search...' });
+  countInput.value = '2 of 8';
+  const modelSelection = new Element('div', [new TextNode('Model selection')], { 'aria-label': 'Orchestrator model selection' });
+  const inboxMode = new TextNode('Inbox Mode');
   const body = new Element('div', [label,missing,settingsName,browserDescription,shortcutName,sidebarButton,browserSearch,
     effortHeader, effortOption, new Element('div', [effortTooltip], { role: 'tooltip' }),
     new Element('div', [offloadTooltip], { role: 'tooltip' }),
+    new Element('div', [modelName, new Element('span', [leavingBadge], { 'data-tooltip-id': 'model-leaving' })], { 'data-testid': 'model-selector-item' }),
+    new Element('div', [leavingTooltip, leavingTooltipWithYear, invalidLeavingHelp], { role: 'tooltip' }),
+    new Element('div', [hydrogenTooltip, alternateHydrogenTooltip, carbonTooltip, unknownLeavingTooltip], { role: 'tooltip' }),
+    projectPickerRow,
+    new Element('div', [quotedLeavingHelp, quotedLeavingBadge, quotedProjectPicker, quotedHydrogenHelp, quotedCarbonHelp], { 'data-testid': 'user-message' }),
     restoreRow, overlayRestoreRow, unrelatedRow, new Element('code', [codeRestoreName]),
     new Element('div', [quotedEffort, quotedOffloadHelp], { 'data-testid': 'agent-response' }),
-    new Element('div', [userText], { 'data-testid': 'user-message' }), new Element('pre', [codeText])]);
+    new Element('div', [userText, quotedCount], { 'data-testid': 'user-message' }), new Element('pre', [codeText, codeCount]),
+    new Element('span', [countText], { 'data-testid': 'find-bar-match-count' }), countInput, modelSelection, inboxMode]);
   const showContextMenu=()=>{};
+  let onMutation;
   const scope={
     window:{location:{protocol:'https:',hostname,pathname:'/'},electronNative:{showContextMenu}},
     document:{body,readyState:'complete',querySelector:()=>null,querySelectorAll:(selector)=>body.querySelectorAll(selector)},
     Node:{TEXT_NODE:3,ELEMENT_NODE:1},
-    MutationObserver:class {observe(){} disconnect(){}},
+    MutationObserver:class {
+      constructor(callback) { this.callback = callback; }
+      observe(target) { if (target === body) onMutation = this.callback; }
+      disconnect() {}
+    },
     console,
   };
   vm.runInNewContext(injected,scope);
@@ -110,6 +150,22 @@ for (const [hostname,expected] of [
   assert.equal(effortInfo.getAttribute('aria-label'), displayedHelp);
   assert.equal(offloadTooltip.textContent, translated ? "把常规步骤交给更快的执行模型，保持同等质量，同时减少 Token 用量。" : offloadHelp);
   assert.equal(quotedOffloadHelp.textContent, offloadHelp);
+  assert.equal(leavingBadge.textContent, translated ? '即将下线' : 'Leaving Soon');
+  assert.equal(modelName.textContent, 'Gemini 4 Argon');
+  assert.equal(leavingTooltip.textContent, translated ? '最初推出的 Gemini 4 模型，适合高级工作流。将于 11 月 30 日下线。' : leavingHelp);
+  assert.equal(leavingTooltipWithYear.textContent, translated ? '最初推出的 Gemini 4 模型，适合高级工作流。将于 2027 年 12 月 9 日下线。' : leavingHelpWithYear);
+  assert.equal(invalidLeavingHelp.textContent, 'The original Gemini 4 model for advanced workflows. Leaving on Nov 32.');
+  assert.equal(quotedLeavingHelp.textContent, leavingHelp);
+  assert.equal(hydrogenTooltip.textContent, translated ? '使用 Hydrogen，可以用更少的配额获得更好的效果。将于 11 月 30 日下线。' : hydrogenHelp);
+  assert.equal(alternateHydrogenTooltip.textContent, translated ? '使用 Hydrogen，可以用更少的配额获得更好的效果。将于 12 月 7 日下线。' : alternateHydrogenHelp);
+  assert.equal(carbonTooltip.textContent, translated ? '适合最棘手、需要长期推进的任务' : carbonHelp);
+  assert.equal(unknownLeavingTooltip.textContent, unknownLeavingHelp);
+  assert.equal(quotedHydrogenHelp.textContent, hydrogenHelp);
+  assert.equal(quotedCarbonHelp.textContent, carbonHelp);
+  assert.equal(quotedLeavingBadge.textContent, 'Leaving Soon');
+  assert.equal(projectPicker.textContent, translated ? '打开项目选择器' : 'Open Project Picker');
+  assert.equal(projectPickerRow.getAttribute('data-item-id'), 'openWorkspaceSelector');
+  assert.equal(quotedProjectPicker.textContent, 'Open Project Picker');
   assert.equal(restoreGlyph.textContent, translated ? '↶' : 'restore_page');
   assert.equal(overlayRestoreGlyph.textContent, translated ? '↶' : 'restore_page');
   assert.equal(restoreLabel.textContent, translated ? '重新打开关闭的标签页' : 'Reopen Closed Tab');
@@ -120,6 +176,21 @@ for (const [hostname,expected] of [
   assert.equal(browserSearch.value, 'Orchestrator Settings');
   assert.equal(userText.textContent, 'Orchestrator Settings');
   assert.equal(codeText.textContent, 'Select Sidebar Item 9');
+  assert.equal(modelSelection.textContent, translated ? '模型选择' : 'Model selection');
+  assert.equal(modelSelection.getAttribute('aria-label'), translated ? '编排器模型选择' : 'Orchestrator model selection');
+  assert.equal(inboxMode.textContent, translated ? '收件箱模式' : 'Inbox Mode');
+  assert.equal(countText.textContent, translated ? '第 2 项，共 8 项' : '2 of 8');
+  assert.equal(quotedCount.textContent, '2 of 8');
+  assert.equal(codeCount.textContent, '2 of 8');
+  assert.equal(countInput.value, '2 of 8');
+  if (translated) {
+    countText.textContent = '11 of 500+';
+    onMutation([{ type: 'characterData', target: countText }]);
+    assert.equal(countText.textContent, '第 11 项，共 500+ 项');
+    const writes = countText.writes;
+    onMutation([{ type: 'characterData', target: countText }]);
+    assert.equal(countText.writes, writes);
+  }
   assert.equal(scope.window.electronNative.showContextMenu === showContextMenu, !translated);
   assert.equal(typeof scope._agTranslateContextMenuItems, translated ? 'function' : 'undefined');
 }

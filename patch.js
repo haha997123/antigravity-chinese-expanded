@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { spawnSync } = require('node:child_process');
 
 const SUPPORTED_VERSION = '2.32.1';
-const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0'];
+const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0', '2.35.1'];
 const PATCH_MARKER = 'ANTIGRAVITY CHINESE LOCALIZATION PATCH';
 const UI_PATCH_MARKER = '// ANTIGRAVITY CHINESE UI-ONLY PATCH';
 const EXPECTED_MODULES = ['preload', 'main', 'menu', 'tray', 'updater', 'provisionSplash', 'ipcHandlers'];
@@ -1277,9 +1277,10 @@ function buildInjectScript(dict) {
   }
 
 
+  const uiDateMonths = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
+
   function formatUiDate(value) {
-    const months = {January:1,February:2,March:3,April:4,May:5,June:6,July:7,August:8,September:9,October:10,November:11,December:12};
-    return value.replace(/\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),\\s+(\\d{4})\\b/g, (original, month, day, year) => Number(day) >= 1 && Number(day) <= 31 ? year + ' 年 ' + months[month] + ' 月 ' + Number(day) + ' 日' : original);
+    return value.replace(/\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(\\d{1,2}),\\s+(\\d{4})\\b/g, (original, month, day, year) => Number(day) >= 1 && Number(day) <= 31 ? year + ' 年 ' + uiDateMonths[month] + ' 月 ' + Number(day) + ' 日' : original);
   }
 
   function translateTextInternal(text) {
@@ -1296,6 +1297,17 @@ function buildInjectScript(dict) {
     if (modelEffortTail) return modelEffortTail[1] + ' ' + effortNames[modelEffortTail[2].toLowerCase()];
     const paidPlanNotice = normalizedText.match(/^(.+?) (?:is now available|are available) on paid Pro and Ultra plans\\. Third-party model access will no longer be available on your current plan starting on (.+)\\.$/);
     if (paidPlanNotice) return paidPlanNotice[1].replace(/ and /g, ' 和 ') + ' 现已向付费 Pro 和 Ultra 方案用户开放。从 ' + formatUiDate(paidPlanNotice[2]) + '起，你当前的方案将不再提供第三方模型访问权限。';
+    const modelLeavingNotice = normalizedText.match(/^(.+?)\\. Leaving on ([A-Z][a-z]+)\\.? (\\d{1,2})(?:, (\\d{4}))?\\.?$/);
+    if (modelLeavingNotice) {
+      const [, description, monthText, dayText, year] = modelLeavingNotice;
+      const label = normalizedDict[description + '.'] || normalizedDict[description];
+      const monthName = Object.keys(uiDateMonths).find(month => month === monthText || month.slice(0, 3) === monthText);
+      const day = Number(dayText);
+      if (label && monthName && day >= 1 && day <= 31) {
+        const date = (year ? year + ' 年 ' : '') + uiDateMonths[monthName] + ' 月 ' + day + ' 日';
+        return label.replace(/[。.]$/, '') + '。将于 ' + date + '下线。';
+      }
+    }
     const removalNotice = normalizedText.match(/^(.+?) will be removed from Antigravity on (.+)\\.$/);
     if (removalNotice) return removalNotice[1] + ' 将于 ' + formatUiDate(removalNotice[2]) + '从 Antigravity 中移除。';
     const planAvailability = normalizedText.match(/^(.+?) is currently available to (Ultra plan|Ultra and paid Pro plan|paid Pro and Ultra) subscribers\\.$/);
@@ -1600,6 +1612,13 @@ function buildInjectScript(dict) {
     if (node.nodeType === Node.TEXT_NODE) {
       if (isInExcludedZone(node)) return;
       if (node.textContent === 'restore_page' && translateRestorePageIcon(node)) return;
+      if (node.parentElement?.getAttribute('data-testid') === 'find-bar-match-count') {
+        const count = node.textContent.match(/^(\\d+) of (\\d+\\+?)$/);
+        if (count) {
+          node.textContent = '第 ' + count[1] + ' 项，共 ' + count[2] + ' 项';
+          return;
+        }
+      }
       const translated = translateText(node.textContent);
       if (translated !== null && translated !== node.textContent) {
         node.textContent = translated;
