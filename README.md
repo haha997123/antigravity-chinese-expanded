@@ -4,9 +4,10 @@
 
 ## 下载与安装
 
-1. 安装 Windows 版 Antigravity 和随附 npm 的 Node.js 18 或更高版本。
-2. 从下表下载与客户端版本对应的 ZIP 并解压。
-3. 保存工作并正常退出 Antigravity，双击解压目录中的 `install.cmd`。补丁成功应用后，从原来的快捷方式打开客户端。
+1. 安装对应版本的 Windows Antigravity，从下表打开该版本的发行页，下载附件中的 `antigravity-chinese-expanded-*.zip` 并完整解压。
+2. 保存工作并正常退出 Antigravity，双击解压目录中的 `install.cmd`。补丁成功应用后，从原来的快捷方式打开客户端。
+
+v1.2.4 起，离线 ZIP 随附 Windows x64 和 ARM64 的便携 Node.js 及运行依赖。解压后即可离线安装和还原。旧版本的前置条件见各自的发行页。
 
 应用会核对客户端资源并保留同版本原版备份。若要还原英文，先正常退出客户端，再双击 `restore.cmd`。官方更新覆盖补丁后，从下表选择适配当前客户端版本的安装包。
 
@@ -16,7 +17,7 @@
 
 | Windows Antigravity 版本 | 最新适配包 |
 | --- | --- |
-| 2.35.1 | [v1.2.3](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.3) |
+| 2.35.1 | [v1.2.4](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.4) |
 | 2.34.0 | [v1.2.1](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.2.1) |
 | 2.33.0 | [v1.0.10](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.10) |
 | 2.32.2 | [v1.0.8](https://github.com/haha997123/antigravity-chinese-expanded/releases/tag/v1.0.8) |
@@ -24,15 +25,14 @@
 
 ## 手动应用补丁
 
-客户端安装在非默认位置时，可关闭客户端，在解压后的目录中运行以下命令，再自行启动客户端。使用前请确认同版本原版归档已经验证。
+客户端安装在自定义位置时，正常退出客户端，在解压目录中指定安装路径并运行离线入口。使用前请确认客户端版本。
 
 ```powershell
-npm ci --ignore-scripts
 $env:ANTIGRAVITY_INSTALL_DIR = (Resolve-Path .\Antigravity).Path
-node .\patch.js --no-kill
+.\install.cmd
 ```
 
-脚本会核对原版归档并保留同版本备份。
+从源码运行时，使用随附 npm 的 Node.js 18 或更新版本。执行 `npm ci --ignore-scripts` 后运行 `node .\patch.js --no-kill`。脚本会核对原版归档并保留同版本备份。
 
 ## 自动中文会话标题（可选）
 

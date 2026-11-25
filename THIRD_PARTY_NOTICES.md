@@ -11,7 +11,9 @@
 
 ## 运行依赖
 
-补丁使用 [`@electron/asar`](https://github.com/electron/asar) 读取和重新打包 ASAR。该依赖采用 MIT 许可。安装时使用的具体依赖及传递依赖版本以 `package-lock.json` 为准，各包版权及许可保留在其发布包中。
+补丁使用 [`@electron/asar`](https://github.com/electron/asar) 读取和重新打包 ASAR。该依赖采用 MIT 许可。离线发行包按 `package-lock.json` 打包运行依赖，各包版权及许可保留在 `node_modules` 的对应包内。
+
+离线发行包随附官方 [Node.js v24.22.3](https://nodejs.org/dist/v24.22.3/) 的 Windows x64 和 ARM64 `node.exe`，并在 `runtime/LICENSE.node.txt` 提供 Node.js 及其内置组件的许可。打包脚本固定版本与 SHA-256。ZIP 中的 `runtime/manifest.json` 记录源码提交和运行文件的 SHA-256。
 
 ## Antigravity 及插件目录
 
