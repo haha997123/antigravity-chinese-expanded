@@ -120,6 +120,19 @@ for (const [hostname,expected] of [
   const countInput = new Element('input', [], { placeholder: 'Search...' });
   countInput.value = '2 of 8';
   const modelSelection = new Element('div', [new TextNode('Model selection')], { 'aria-label': 'Orchestrator model selection' });
+  const runningModelNotice = 'Applies to /btw and messages sent after this turn';
+  const queuedModelNotice = 'Applies to messages sent after this turn';
+  const runningModelTooltip = new Element('div', [new TextNode(runningModelNotice)], { role: 'tooltip' });
+  const queuedModelTooltip = new Element('div', [new TextNode(queuedModelNotice)], { role: 'tooltip' });
+  const modelNameWithPeriod = 'Gemini 4.1 (Low)';
+  const runningModelLabel = 'Select model, current: ' + modelNameWithPeriod + '. ' + runningModelNotice;
+  const queuedModelLabel = 'Select model, current: Gemini 4 Neon. ' + queuedModelNotice;
+  const runningModelButton = new Element('button', [], { 'data-testid': 'model-selector-trigger', 'aria-label': runningModelLabel, 'data-model-label': modelNameWithPeriod });
+  const queuedModelButton = new Element('button', [], { 'data-testid': 'model-selector-trigger', 'aria-label': queuedModelLabel });
+  const modelNoticeInMessage = new Element('div', [new TextNode(runningModelNotice)], { 'data-testid': 'user-message' });
+  const modelNoticeInCode = new Element('pre', [new TextNode(runningModelNotice)]);
+  const modelNoticeInInput = new Element('textarea', []);
+  modelNoticeInInput.value = runningModelNotice;
   const inboxMode = new TextNode('Inbox Mode');
   const body = new Element('div', [label,missing,settingsName,browserDescription,shortcutName,sidebarButton,browserSearch,
     effortHeader, effortOption, new Element('div', [effortTooltip], { role: 'tooltip' }),
@@ -132,7 +145,8 @@ for (const [hostname,expected] of [
     restoreRow, overlayRestoreRow, unrelatedRow, new Element('code', [codeRestoreName]),
     new Element('div', [quotedEffort, quotedOffloadHelp], { 'data-testid': 'agent-response' }),
     new Element('div', [userText, quotedCount], { 'data-testid': 'user-message' }), new Element('pre', [codeText, codeCount]),
-    new Element('span', [countText], { 'data-testid': 'find-bar-match-count' }), countInput, modelSelection, inboxMode]);
+    new Element('span', [countText], { 'data-testid': 'find-bar-match-count' }), countInput, modelSelection, inboxMode,
+    runningModelTooltip, queuedModelTooltip, runningModelButton, queuedModelButton, modelNoticeInMessage, modelNoticeInCode, modelNoticeInInput]);
   const showContextMenu=()=>{};
   let onMutation;
   const scope={
@@ -192,6 +206,14 @@ for (const [hostname,expected] of [
   assert.equal(codeText.textContent, 'Select Sidebar Item 9');
   assert.equal(modelSelection.textContent, translated ? '模型选择' : 'Model selection');
   assert.equal(modelSelection.getAttribute('aria-label'), translated ? '编排器模型选择' : 'Orchestrator model selection');
+  assert.equal(runningModelTooltip.textContent, translated ? '适用于 /btw 及本轮结束后发送的消息' : runningModelNotice);
+  assert.equal(queuedModelTooltip.textContent, translated ? '适用于本轮结束后发送的消息' : queuedModelNotice);
+  assert.equal(runningModelButton.getAttribute('aria-label'), translated ? '选择模型，当前：Gemini 4.1 (Low)。适用于 /btw 及本轮结束后发送的消息' : runningModelLabel);
+  assert.equal(queuedModelButton.getAttribute('aria-label'), translated ? '选择模型，当前：Gemini 4 Neon。适用于本轮结束后发送的消息' : queuedModelLabel);
+  assert.equal(runningModelButton.getAttribute('data-model-label'), modelNameWithPeriod);
+  assert.equal(modelNoticeInMessage.textContent, runningModelNotice);
+  assert.equal(modelNoticeInCode.textContent, runningModelNotice);
+  assert.equal(modelNoticeInInput.value, runningModelNotice);
   assert.equal(inboxMode.textContent, translated ? '收件箱模式' : 'Inbox Mode');
   assert.equal(countText.textContent, translated ? '第 2 项，共 8 项' : '2 of 8');
   assert.equal(quotedCount.textContent, '2 of 8');

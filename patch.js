@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { spawnSync } = require('node:child_process');
 
 const SUPPORTED_VERSION = '2.32.1';
-const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0', '2.35.1'];
+const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0', '2.35.1', '2.35.2'];
 const PATCH_MARKER = 'ANTIGRAVITY CHINESE LOCALIZATION PATCH';
 const UI_PATCH_MARKER = '// ANTIGRAVITY CHINESE UI-ONLY PATCH';
 const EXPECTED_MODULES = ['preload', 'main', 'menu', 'tray', 'updater', 'provisionSplash', 'ipcHandlers'];
@@ -1427,6 +1427,10 @@ function buildInjectScript(dict) {
     }
 
     // 16. Dynamic Regex translation for "Select model, current: ..."
+    const runningModelSelector = normalizedText.match(/^Select model, current: (.+)\\. (Applies to (?:\\/btw and )?messages sent after this turn)$/);
+    if (runningModelSelector && normalizedDict[runningModelSelector[2]]) {
+      return '选择模型，当前：' + runningModelSelector[1] + '。' + normalizedDict[runningModelSelector[2]];
+    }
     const selectModelMatch = normalizedText.match(/^Select\\s+model,\s*current:\s*(.+)$/i);
     if (selectModelMatch) {
       return \`选择模型，当前：\${selectModelMatch[1]}\`;

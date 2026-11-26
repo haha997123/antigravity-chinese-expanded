@@ -4539,6 +4539,8 @@
   "Model selection": "模型选择",
   "Default uses server-managed routing and Orchestrator quota. Custom pins specific models for orchestration and execution.": "默认模式由服务器选择模型，并使用编排器配额。自定义模式可为编排和执行分别指定模型。",
   "Orchestrator model selection": "编排器模型选择",
+  "Applies to /btw and messages sent after this turn": "适用于 /btw 及本轮结束后发送的消息",
+  "Applies to messages sent after this turn": "适用于本轮结束后发送的消息",
   "Inbox Mode": "收件箱模式",
   "Keep running conversations in a separate Working section instead of in the Inbox.": "在单独的「处理中」分区显示运行中的会话。",
   "Move idle Inbox conversations to Resolved automatically after the selected time.": "超过所选时间后，自动将闲置的收件箱会话移至「已处理」。",
