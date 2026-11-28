@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { spawnSync } = require('node:child_process');
 
 const SUPPORTED_VERSION = '2.32.1';
-const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0', '2.35.1', '2.35.2'];
+const SUPPORTED_VERSIONS = ['2.32.1', '2.32.2', '2.33.0', '2.34.0', '2.35.1', '2.35.2', '2.36.0'];
 const PATCH_MARKER = 'ANTIGRAVITY CHINESE LOCALIZATION PATCH';
 const UI_PATCH_MARKER = '// ANTIGRAVITY CHINESE UI-ONLY PATCH';
 const EXPECTED_MODULES = ['preload', 'main', 'menu', 'tray', 'updater', 'provisionSplash', 'ipcHandlers'];
